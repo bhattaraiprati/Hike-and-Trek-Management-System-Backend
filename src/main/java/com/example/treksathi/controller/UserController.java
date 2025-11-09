@@ -25,10 +25,6 @@ public class UserController {
 
 
 
-    @GetMapping("/greet")
-    public String greet(HttpServletRequest request){
-    return "Hello from trek sathi";
-    }
 
     @PostMapping("/register")
     public ResponseEntity<?> register(@Valid @RequestBody UserCreateDTO user){
@@ -43,7 +39,7 @@ public class UserController {
     }
 
     @PostMapping("/login")
-    public ResponseEntity<?> userLogin(@Valid @RequestBody UserCreateDTO userCreateDTO){
+    public ResponseEntity<?> userLogin( @RequestBody UserCreateDTO userCreateDTO){
 //      @Valid -> it used to check the validation of the incoming request before running into the method
         String token = userServices.verify(userCreateDTO);
         return ResponseEntity.ok(Collections.singletonMap("token", token));

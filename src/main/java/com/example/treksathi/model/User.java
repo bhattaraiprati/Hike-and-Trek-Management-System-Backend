@@ -1,5 +1,6 @@
 package com.example.treksathi.model;
 
+import com.example.treksathi.enums.AuthProvidertype;
 import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.Setter;
@@ -15,6 +16,11 @@ public class User {
     private String email;
     private String password;
     private String name;
+
+    private String providerId;
+    @Enumerated(EnumType.STRING)
+    private AuthProvidertype providerType;
+
     private String role;
 
 }
