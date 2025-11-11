@@ -19,4 +19,22 @@ public class GlobalExceptionHandler {
         body.put("message", ex.getMessage());
         return new ResponseEntity<>(body, HttpStatus.UNAUTHORIZED);
     }
+
+    @ExceptionHandler(UserAlreadyExistException.class)
+    public ResponseEntity<Map<String, Object>> handleUserAlreadyExistException(UserAlreadyExistException ex){
+        Map<String, Object> body = new HashMap<>();
+        body.put("Status", HttpStatus.CONFLICT.value());
+        body.put("error", "User Already Exist");
+        body.put("message", ex.getMessage());
+        return new ResponseEntity<>(body, HttpStatus.CONFLICT);
+    }
+
+    @ExceptionHandler(InternalServerErrorException.class)
+    public ResponseEntity<Map<String, Object>> handleInternalServerErrorException(InternalServerErrorException ex){
+        Map<String, Object> body = new HashMap<>();
+        body.put("Status", HttpStatus.INTERNAL_SERVER_ERROR.value());
+        body.put("error", "Internal Server Error");
+        body.put("message", ex.getMessage());
+        return new ResponseEntity<>(body, HttpStatus.INTERNAL_SERVER_ERROR);
+    }
 }

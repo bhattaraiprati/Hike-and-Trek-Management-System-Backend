@@ -20,8 +20,21 @@ public class Organizer {
     private String organization_name;
     private String contact_person;
     private String address;
+    private String phone;
     private String document_url;
-    private Approval_status approval_status;
-    private String verified_by;
+    @Column(length = 250)
+    private String about;
+    @Enumerated(EnumType.STRING)
+    private Approval_status approval_status = Approval_status.PENDING;
+
+    @ManyToOne
+    @JoinColumn(name = "verified_by")
+    private User verified_by;
     private LocalDateTime verified_on;
+    private LocalDateTime createdAt;
+
+    @PrePersist
+    public void onCreate() {
+        this.createdAt = LocalDateTime.now();
+    }
 }

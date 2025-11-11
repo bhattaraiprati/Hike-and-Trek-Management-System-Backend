@@ -1,9 +1,10 @@
 package com.example.treksathi.service;
 
-import com.example.treksathi.dto.user.JWTService;
+import com.example.treksathi.config.JWTService;
 import com.example.treksathi.dto.user.LoginResponseDTO;
 import com.example.treksathi.dto.user.UserCreateDTO;
 import com.example.treksathi.enums.AuthProvidertype;
+import com.example.treksathi.enums.Role;
 import com.example.treksathi.exception.InvalidCredentialsException;
 import com.example.treksathi.model.User;
 import com.example.treksathi.repository.UserRepository;
@@ -47,7 +48,7 @@ public class UserServices {
         user.setName(request.getName());
         user.setEmail(email);
         user.setPassword(hashedPassword);
-        user.setRole("USER");
+        user.setRole(Role.HIKER);
 
         return userRepository.save(user);
 
@@ -64,7 +65,7 @@ public class UserServices {
             }
             User user = u.get();
             if (auth.isAuthenticated()) {
-                String token = jwtService.generateToken(user.getId(), user.getEmail(), user.getName(), user.getRole());
+                String token = jwtService.generateToken(user.getId(), user.getEmail(), user.getName(), String.valueOf(user.getRole()));
                 return token;
             } else {
                 throw new InvalidCredentialsException("Invalid credentials");
@@ -95,20 +96,17 @@ public class UserServices {
             newUser.setName(oAuth2User.getAttribute("name"));
             newUser.setProviderId(providerId);
             newUser.setProviderType(providertype);
-            newUser.setRole("USER"); // Default role
+            newUser.setRole(Role.HIKER); // Default role
             user = userRepository.save(newUser);
             log.info("New OAuth2 user created: {} via {}", email, providertype);
         }
-        // Case 2: User exists with email but different provider - link accounts
         else if (user == null && emailUser != null) {
-            // Update existing user with OAuth provider info
             emailUser.setProviderId(providerId);
             emailUser.setProviderType(providertype);
 
             user = userRepository.save(emailUser);
             log.info("Linked OAuth2 provider {} to existing user: {}", providertype, email);
         }
-        // Case 3: User exists with OAuth provider - just login
         else if (user != null) {
             // User already exists with this OAuth provider
             log.info("Existing OAuth2 user logged in: {} via {}", email, providertype);
@@ -126,7 +124,7 @@ public class UserServices {
                 user.getId(),
                 user.getEmail(),
                 user.getName(),
-                user.getRole()
+                String.valueOf(user.getRole())
         );
 
         LoginResponseDTO loginResponseDTO = new LoginResponseDTO();

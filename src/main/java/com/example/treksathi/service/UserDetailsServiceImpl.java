@@ -21,13 +21,20 @@ public class UserDetailsServiceImpl implements UserDetailsService {
 
     @Override
     public UserDetails loadUserByUsername(String email){
-        Optional<User> user = userRepository.findByEmail(email);
-        if (user == null) {
-            throw new UsernameNotFoundException("User not found with email: " + email);
-        }
+        User user = userRepository.findByEmail(email).orElseThrow(() -> new UsernameNotFoundException("User not found: " + email));
+//        if (user == null) {
+//            throw new UsernameNotFoundException("User not found with email: " + email);
+//        }
+        // Use a dummy password if null (OAuth2 users)
+        String password = user.getPassword() != null ? user.getPassword() : "OAUTH2_USER";
         return org.springframework.security.core.userdetails.User.builder()
-                .username(user.get().getName())
-                .password(user.get().getPassword())
+                .username(user.getEmail())
+                .password(password)
+                .authorities("ROLE_" + user.getRole())
+                .accountExpired(false)
+                .accountLocked(false)
+                .credentialsExpired(false)
+                .disabled(false)
                 .build();
 
     }

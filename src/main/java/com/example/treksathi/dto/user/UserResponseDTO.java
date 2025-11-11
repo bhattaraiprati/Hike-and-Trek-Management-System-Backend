@@ -21,6 +21,6 @@ public class UserResponseDTO {
         this.id = user.getId();
         this.email = user.getEmail();
         this.name = user.getName();
-        this.role = user.getRole();
+        this.role = String.valueOf(user.getRole());
     }
 }
