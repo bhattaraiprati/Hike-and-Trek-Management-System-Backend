@@ -22,13 +22,17 @@ public class User {
     private String name;
     private String phone;
 
+
     private String providerId;
     @Enumerated(EnumType.STRING)
     private AuthProvidertype providerType = AuthProvidertype.LOCAL;
 
+    @Enumerated(EnumType.STRING)
+    @Column(nullable = false)
+
     private Role role = Role.HIKER;
 
     @Enumerated(EnumType.STRING)
-    private AccountStatus status = AccountStatus.ACTIVE;
+    private AccountStatus status = AccountStatus.INACTIVE;
 
 }

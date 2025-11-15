@@ -12,16 +12,19 @@ import com.example.treksathi.model.User;
 import com.example.treksathi.repository.OrganizerRepository;
 import com.example.treksathi.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 @Service
 @RequiredArgsConstructor
+@Slf4j
 public class OrganizerService {
 
     private final UserRepository userRepository;
     private final OrganizerRepository organizerRepository;
+    private final UserServices userServicesl;
 
     @Transactional
     public Organizer registerOrganizer(OrganizerRegistrationDTO dto){
@@ -50,12 +53,19 @@ public class OrganizerService {
         organizer.setAbout(dto.getAbout());
         organizer.setDocument_url(dto.getDocumentUrl());
         organizer.setApproval_status(Approval_status.PENDING);
-        return organizerRepository.save(organizer);
+        organizer = organizerRepository.save(organizer);
+            try{
+                userServicesl.sendRegistrationOTP(user);
+            }catch (Exception e){
+                log.error("Failed to initiate OTP sending for user: {}", user.getId(), e);
+            }
+
+
+        return organizer;
         }
         catch(Exception e){
             throw new InternalServerErrorException("Failed to Create User");
         }
     }
-
 
 }

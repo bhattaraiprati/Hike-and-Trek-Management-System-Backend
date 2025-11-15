@@ -1,5 +1,6 @@
 package com.example.treksathi.dto.user;
 
+import jakarta.persistence.Column;
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Pattern;
@@ -24,8 +25,5 @@ public class UserCreateDTO {
     @NotBlank(message = "Name is required")
     private String name;
 
-    @NotBlank(message = "Role is required")
-    @Pattern(regexp = "USER|ORGANIZER|ADMIN", message = "Role must be USER, ORGANIZER, or ADMIN")
-    private String role;
 
 }

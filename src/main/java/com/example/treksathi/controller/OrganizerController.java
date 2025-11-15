@@ -6,6 +6,7 @@ import com.example.treksathi.service.OrganizerService;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import org.springframework.dao.DuplicateKeyException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -25,7 +26,14 @@ public class OrganizerController {
 
     @GetMapping("/organizer_register")
     public ResponseEntity<String> organizerRegister(@Valid @RequestBody OrganizerRegistrationDTO dto){
-        organizerService.registerOrganizer(dto);
-        return ResponseEntity.status(HttpStatus.CREATED).body("User Created Successfully");
+        try {
+            organizerService.registerOrganizer(dto);
+            return ResponseEntity.status(HttpStatus.CREATED).body("User Created Successfully");
+        }
+        catch (DuplicateKeyException e){
+            return ResponseEntity.status(HttpStatus.CONFLICT)
+                    .body(e.getMessage());
+        }
+
     }
 }
