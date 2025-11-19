@@ -14,6 +14,7 @@ import com.example.treksathi.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -25,6 +26,8 @@ public class OrganizerService {
     private final UserRepository userRepository;
     private final OrganizerRepository organizerRepository;
     private final UserServices userServicesl;
+    private final PasswordEncoder passwordEncoder;
+
 
     @Transactional
     public Organizer registerOrganizer(OrganizerRegistrationDTO dto){
@@ -34,10 +37,12 @@ public class OrganizerService {
         if(existingUser != null ){
             throw new UserAlreadyExistException("User already exist for "+ dto.getEmail());
         }
+
+        String hashedPassword = passwordEncoder.encode(dto.getPassword());
         User user = new User();
         user.setName(dto.getFullName());
         user.setEmail(dto.getEmail());
-        user.setPassword(dto.getPassword());
+        user.setPassword(hashedPassword);
         user.setPhone(dto.getPhone());
         user.setRole(Role.ORGANIZER);
         user.setProviderType(AuthProvidertype.LOCAL);

@@ -4,14 +4,18 @@ import com.example.treksathi.config.JWTService;
 import com.example.treksathi.dto.user.LoginResponseDTO;
 import com.example.treksathi.dto.user.UserCreateDTO;
 import com.example.treksathi.enums.AccountStatus;
+import com.example.treksathi.enums.Approval_status;
 import com.example.treksathi.enums.AuthProvidertype;
 import com.example.treksathi.enums.Role;
 import com.example.treksathi.exception.InvalidCredentialsException;
 import com.example.treksathi.exception.OTPNotFoundException;
+import com.example.treksathi.exception.UnauthorizedException;
 import com.example.treksathi.exception.UserAlreadyExistException;
 import com.example.treksathi.model.OTP;
+import com.example.treksathi.model.Organizer;
 import com.example.treksathi.model.User;
 import com.example.treksathi.repository.OTPRepository;
+import com.example.treksathi.repository.OrganizerRepository;
 import com.example.treksathi.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -40,7 +44,7 @@ public class UserServices {
     private final AuthenticationManager authenticationManager;
     private final OTPRepository otpRepository;
     private final EmailSendService emailSendService;
-
+    private final OrganizerRepository organizerRepository;
     private final JWTService jwtService;
 
     @Transactional
@@ -75,29 +79,55 @@ public class UserServices {
 
     public String verify(UserCreateDTO userCreateDTO) {
         try {
-            UsernamePasswordAuthenticationToken authToken = new UsernamePasswordAuthenticationToken(userCreateDTO.getEmail(), userCreateDTO.getPassword());
 
-            Authentication auth = authenticationManager.authenticate((authToken));
-            Optional<User> u = userRepository.findByEmail(userCreateDTO.getEmail());
-            if (u.isEmpty()) {
+            Optional<User> userOpt = userRepository.findByEmail(userCreateDTO.getEmail());
+
+            if (userOpt.isEmpty()) {
                 throw new UsernameNotFoundException("User not found with email: " + userCreateDTO.getEmail());
             }
-            User user = u.get();
+
+            User user = userOpt.get();
+
+            // if user is an organizer and verify approval status BEFORE authentication
+            if (user.getRole() == Role.ORGANIZER) {
+                Organizer organizer = organizerRepository.findByUser(userOpt);
+
+                if (organizer != null && organizer.getApproval_status() == Approval_status.PENDING) {
+                    throw new UnauthorizedException("Your account is under review. Please wait for admin approval.");
+                }
+
+                if (organizer != null && organizer.getApproval_status() == Approval_status.DECLINE) {
+                    throw new UnauthorizedException("Your account has been rejected. Please contact support.");
+                }
+            }
+
+
+            UsernamePasswordAuthenticationToken authToken =
+                    new UsernamePasswordAuthenticationToken(userCreateDTO.getEmail(), userCreateDTO.getPassword());
+
+            Authentication auth = authenticationManager.authenticate(authToken);
+
             if (auth.isAuthenticated()) {
-                String token = jwtService.generateToken(user.getId(), user.getEmail(), user.getName(), String.valueOf(user.getRole()));
+                String token = jwtService.generateToken(
+                        user.getId(),
+                        user.getEmail(),
+                        user.getName(),
+                        String.valueOf(user.getRole())
+                );
                 return token;
             } else {
                 throw new InvalidCredentialsException("Invalid credentials");
             }
+
         } catch (BadCredentialsException e) {
             throw new InvalidCredentialsException("Invalid email or password");
         }
     }
-//    public UserResponseDTO
+
 
     @Transactional
     public void sendRegistrationOTP(User user) {
-        // Delete existing OTP if any
+        // Delete existing OTP if any exist
         otpRepository.findByUser(user).ifPresent(otpRepository::delete);
 
         // Generate and save new OTP
@@ -105,12 +135,12 @@ public class UserServices {
         OTP otp = new OTP();
         otp.setUser(user);
         otp.setOtp(otpValue);
-        otp.setCreatedAt(LocalDateTime.now()); // Set createdAt
+        otp.setCreatedAt(LocalDateTime.now());
         otp.setExpireAt(LocalDateTime.now().plusMinutes(5));
         otp.setUsed(false);
         otpRepository.save(otp);
 
-        // Send email asynchronously (fire and forget)
+
         String subject = "Account Verification OTP";
         String text = String.format(
                 "Hello %s,\n\n" +

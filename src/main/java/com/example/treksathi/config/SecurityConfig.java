@@ -65,18 +65,30 @@ public class SecurityConfig {
         http.csrf(customizer -> customizer.disable())
                 .cors(cors -> cors.configurationSource(corsConfigurationSource()))
                 .authorizeHttpRequests(auth -> auth
-                        .requestMatchers("/api/auth/**").permitAll() // Fixed: added leading slashes
+                        .requestMatchers("/api/auth/**").permitAll()
+                        .requestMatchers("/login/**").permitAll()  // Allow login page
+                        .requestMatchers("/oauth2/**").permitAll()
+                        .requestMatchers("/login/oauth2/code/**").permitAll()
                         .anyRequest().authenticated())
                 .addFilterBefore(jwtAuthFilter, UsernamePasswordAuthenticationFilter.class)
                         .oauth2Login(oAuth2->oAuth2.failureHandler(
                                 (request, response, exception) -> {
                                     log.error("OAuth error: {}", exception.getMessage());
+                                    response.sendError(HttpServletResponse.SC_UNAUTHORIZED, exception.getMessage());
                                 }
                         ).successHandler(oAuth2SuccessHandler)
-                        );
+                        )
 
-
-        http.httpBasic(Customizer.withDefaults());
+                        .formLogin(form -> form.disable())
+                        .httpBasic(basic -> basic.disable())
+                .exceptionHandling(exceptions -> exceptions
+                        .authenticationEntryPoint((request, response, authException) -> {
+                            // Return JSON error instead of redirecting
+                            response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
+                            response.setContentType("application/json");
+                            response.getWriter().write("{\"error\": \"Unauthorized\", \"message\": \"" + authException.getMessage() + "\"}");
+                        })
+                );
         /* session management code denote that the there is no need to
         store the session in the server to validate the user because we are using
         the stateless (JWT) to validate the user

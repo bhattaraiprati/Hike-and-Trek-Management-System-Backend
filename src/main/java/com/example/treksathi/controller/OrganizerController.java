@@ -9,22 +9,21 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.dao.DuplicateKeyException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 
 @RestController
 @RequiredArgsConstructor
+@RequestMapping("/auth")
 public class OrganizerController {
 
     private final OrganizerService organizerService;
 
-    @GetMapping("/api/greet")
+    @GetMapping("/greet")
     public String greet(HttpServletRequest request){
         return "Hello from trek sathi";
     }
 
-    @GetMapping("/organizer_register")
+    @PostMapping("/organizer_register")
     public ResponseEntity<String> organizerRegister(@Valid @RequestBody OrganizerRegistrationDTO dto){
         try {
             organizerService.registerOrganizer(dto);

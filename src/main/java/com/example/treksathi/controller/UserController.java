@@ -5,6 +5,7 @@ import com.example.treksathi.dto.user.UserCreateDTO;
 import com.example.treksathi.dto.user.UserResponseDTO;
 import com.example.treksathi.enums.AccountStatus;
 import com.example.treksathi.exception.InvalidCredentialsException;
+import com.example.treksathi.exception.UnauthorizedException;
 import com.example.treksathi.exception.UsernameNotFoundException;
 import com.example.treksathi.model.User;
 import com.example.treksathi.service.UserServices;
@@ -18,11 +19,12 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.Map;
 import java.util.Optional;
 
 @RestController
-@RequestMapping("/api/auth")
+@RequestMapping("/auth")
 @RequiredArgsConstructor
 @Slf4j
 public class UserController {
@@ -43,10 +45,15 @@ public class UserController {
 
 
     @PostMapping("/login")
-    public ResponseEntity<?> userLogin(@Valid @RequestBody UserCreateDTO userCreateDTO){
-//      @Valid -> it used to check the validation of the incoming request before running into the method
-        String token = userServices.verify(userCreateDTO);
-        return ResponseEntity.ok(Collections.singletonMap("token", token));
+    public ResponseEntity<?> userLogin(@Valid @RequestBody UserCreateDTO userCreateDTO) {
+        try {
+            String token = userServices.verify(userCreateDTO);
+            return ResponseEntity.ok(Collections.singletonMap("token", token));
+        } catch (UnauthorizedException | InvalidCredentialsException | UsernameNotFoundException e) {
+            Map<String, String> error = new HashMap<>();
+            error.put("message", e.getMessage());
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(error);
+        }
     }
     @PostMapping("/verify-otp")
     public ResponseEntity<?> verifyOTP(@Valid @RequestBody OTPVerificationDTO otpData) {
