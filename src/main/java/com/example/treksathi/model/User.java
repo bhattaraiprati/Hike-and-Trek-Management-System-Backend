@@ -7,6 +7,8 @@ import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.Setter;
 
+import java.util.List;
+
 @Getter
 @Setter
 @Entity
@@ -22,6 +24,8 @@ public class User {
     private String name;
     private String phone;
 
+    @OneToOne(mappedBy = "user", cascade = CascadeType.ALL, orphanRemoval = true)
+    private Organizer organizer;
 
     private String providerId;
     @Enumerated(EnumType.STRING)
@@ -34,5 +38,8 @@ public class User {
 
     @Enumerated(EnumType.STRING)
     private AccountStatus status = AccountStatus.INACTIVE;
+
+    @OneToMany(mappedBy = "user" ,cascade = CascadeType.ALL, fetch = FetchType.LAZY)
+    private List<EventRegistration> eventRegistration;
 
 }
