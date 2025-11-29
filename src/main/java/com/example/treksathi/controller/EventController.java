@@ -26,30 +26,33 @@ public class EventController {
         return new ResponseEntity<>(response, HttpStatus.CREATED);
     }
 
+    // Get all event
     @GetMapping("/all")
     public ResponseEntity<List<EventResponseDTO>> getAllEvents() {
         List<EventResponseDTO> events = eventService.getAllEvents();
         return ResponseEntity.ok(events);
     }
-
+    // Event details by the event ID
     @GetMapping("/{id}")
     public ResponseEntity<EventResponseDTO> getEventById(@PathVariable int id) {
         EventResponseDTO event = eventService.getEventById(id);
         return ResponseEntity.ok(event);
     }
-
+    // get event by the organizer ID
     @GetMapping("/organizer/{organizerId}")
     public ResponseEntity<List<EventResponseDTO>> getEventsByOrganizer(@PathVariable int organizerId) {
         List<EventResponseDTO> events = eventService.getEventsByOrganizer(organizerId);
         return ResponseEntity.ok(events);
     }
 
+    // Get the event by the Status
     @GetMapping("/status/{status}")
     public ResponseEntity<List<EventResponseDTO>> getEventsByStatus(@PathVariable String status) {
         List<EventResponseDTO> events = eventService.getEventsByStatus(status);
         return ResponseEntity.ok(events);
     }
 
+    // update the event by the ID
     @PutMapping("/{id}")
     public ResponseEntity<EventResponseDTO> updateEvent(
             @PathVariable int id,
@@ -57,7 +60,8 @@ public class EventController {
         EventResponseDTO response = eventService.updateEvent(id, eventCreateDTO);
         return ResponseEntity.ok(response);
     }
-
+    // update the event based on the status
+    // can be used by the organizer and the admin
     @PatchMapping("/{id}/status")
     public ResponseEntity<EventResponseDTO> updateEventStatus(
             @PathVariable int id,

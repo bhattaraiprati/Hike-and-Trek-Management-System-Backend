@@ -9,7 +9,8 @@ import java.util.Optional;
 
 @Repository
 public interface OrganizerRepository extends JpaRepository<Organizer, Integer> {
-    Organizer findByUser(Optional<User> user);
+    // Change from findByUserID to findByUserId
+    Optional<Organizer> findByUserId(int id);
 
-//    Optional<Organizer> findByEmail(String email);
+    Organizer findByUser(User user);
 }

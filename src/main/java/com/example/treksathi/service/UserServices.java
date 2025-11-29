@@ -90,7 +90,7 @@ public class UserServices {
 
             // if user is an organizer and verify approval status BEFORE authentication
             if (user.getRole() == Role.ORGANIZER) {
-                Organizer organizer = organizerRepository.findByUser(userOpt);
+                Organizer organizer = organizerRepository.findByUser(user);
 
                 if (organizer != null && organizer.getApproval_status() == Approval_status.PENDING) {
                     throw new UnauthorizedException("Your account is under review. Please wait for admin approval.");

@@ -6,6 +6,7 @@ import lombok.Getter;
 import lombok.Setter;
 
 import java.time.LocalDateTime;
+import java.util.List;
 
 @Entity
 @Getter
@@ -27,6 +28,8 @@ public class Organizer {
     @Enumerated(EnumType.STRING)
     private Approval_status approval_status = Approval_status.PENDING;
 
+    @OneToMany(mappedBy = "organizer")
+    private List<Event> events;
     @ManyToOne
     @JoinColumn(name = "verified_by")
     private User verified_by;

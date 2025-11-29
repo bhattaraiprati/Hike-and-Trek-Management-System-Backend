@@ -31,16 +31,12 @@ public class EventService {
     private final OrganizerRepository organizerRepository;
     private final DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
 
-    /**
-     * CREATE - Create a new event
-     * Gets the organizer from the authenticated user context
-     */
     @Transactional
     public EventResponseDTO createNewEvent(EventCreateDTO eventCreateDTO) {
         // Get authenticated organizer
         User user = getAuthenticatedOrganizer();
 
-        Organizer organizer = organizerRepository.findByUser(Optional.ofNullable(user));
+        Organizer organizer = organizerRepository.findByUser(user);
 
         Event event = new Event();
         event.setOrganizer(organizer);
@@ -48,20 +44,17 @@ public class EventService {
         // Map DTO to Entity
         mapDtoToEntity(eventCreateDTO, event);
 
-        // Set system fields
         event.setStatus(EventStatus.PENDING);
-        event.setCreatedAt(LocalDateTime.now().format(formatter));
-        event.setUpdatedAt(LocalDateTime.now().format(formatter));
+        event.setCreatedAt(LocalDateTime.now());
+        event.setUpdatedAt(LocalDateTime.now());
 
-        // Save event
         Event savedEvent = eventRepository.save(event);
 
         return mapEntityToDto(savedEvent);
     }
 
-    /**
-     * READ - Get all events
-     */
+
+//     READ - Get all events
     @Transactional(readOnly = true)
     public List<EventResponseDTO> getAllEvents() {
         List<Event> events = eventRepository.findAll();
@@ -70,9 +63,9 @@ public class EventService {
                 .collect(Collectors.toList());
     }
 
-    /**
-     * READ - Get event by ID
-     */
+
+//     READ - Get event by ID
+
     @Transactional(readOnly = true)
     public EventResponseDTO getEventById(int id) {
         Event event = eventRepository.findById(id)
@@ -80,12 +73,10 @@ public class EventService {
         return mapEntityToDto(event);
     }
 
-    /**
-     * READ - Get all events created by a specific organizer
-     */
+//     * READ - Get all events created by a specific organizer
     @Transactional(readOnly = true)
     public List<EventResponseDTO> getEventsByOrganizer(int organizerId) {
-        Organizer organizer = organizerRepository.findById(organizerId)
+        Organizer organizer = organizerRepository.findByUserId(organizerId)
                 .orElseThrow(() -> new RuntimeException("Organizer not found with id: " + organizerId));
 
         List<Event> events = eventRepository.findByOrganizer(organizer);
@@ -94,9 +85,8 @@ public class EventService {
                 .collect(Collectors.toList());
     }
 
-    /**
-     * READ - Get events by status (PENDING, APPROVED, REJECTED, CANCELLED, COMPLETED)
-     */
+
+//     READ - Get events by status (PENDING, APPROVED, REJECTED, CANCELLED, COMPLETED)
     @Transactional(readOnly = true)
     public List<EventResponseDTO> getEventsByStatus(String status) {
         try {
@@ -110,37 +100,31 @@ public class EventService {
         }
     }
 
-    /**
-     * UPDATE - Update an existing event
-     * Only the organizer who created the event can update it
-     */
+//     UPDATE - Update an existing event
+//     Only the organizer who created the event can update it
     @Transactional
     public EventResponseDTO updateEvent(int id, EventCreateDTO eventCreateDTO) {
         Event event = eventRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("Event not found with id: " + id));
 
-        // Check if the authenticated user is the owner of this event
 
         User user = getAuthenticatedOrganizer();
-        Organizer authenticatedOrganizer = organizerRepository.findByUser(Optional.ofNullable(user));
+        Organizer authenticatedOrganizer = organizerRepository.findByUser(user);
 
 
         if (event.getOrganizer().getId() != authenticatedOrganizer.getId()) {
             throw new RuntimeException("You are not authorized to update this event");
         }
 
-        // Update fields
         mapDtoToEntity(eventCreateDTO, event);
-        event.setUpdatedAt(LocalDateTime.now().format(formatter));
+        event.setUpdatedAt(LocalDateTime.now());
 
         Event updatedEvent = eventRepository.save(event);
         return mapEntityToDto(updatedEvent);
     }
 
-    /**
-     * UPDATE - Update only the event status
-     * This can be used by admins or organizers
-     */
+//     UPDATE - Update only the event status
+//     This can be used by admins and organizers
     @Transactional
     public EventResponseDTO updateEventStatus(int id, String status) {
         Event event = eventRepository.findById(id)
@@ -149,7 +133,7 @@ public class EventService {
         try {
             EventStatus eventStatus = EventStatus.valueOf(status.toUpperCase());
             event.setStatus(eventStatus);
-            event.setUpdatedAt(LocalDateTime.now().format(formatter));
+            event.setUpdatedAt(LocalDateTime.now());
 
             Event updatedEvent = eventRepository.save(event);
             return mapEntityToDto(updatedEvent);
@@ -158,10 +142,8 @@ public class EventService {
         }
     }
 
-    /**
-     * DELETE - Delete an event
-     * Only the organizer who created the event can delete it
-     */
+//     DELETE - Delete an event
+//     Only the organizer who created the event can delete it
     @Transactional
     public void deleteEvent(int id) {
         Event event = eventRepository.findById(id)
@@ -169,7 +151,7 @@ public class EventService {
 
         // Check if the authenticated user is the owner of this event
         User user = getAuthenticatedOrganizer();
-        Organizer authenticatedOrganizer = organizerRepository.findByUser(Optional.ofNullable(user));
+        Organizer authenticatedOrganizer = organizerRepository.findByUser(user);
 
         if (event.getOrganizer().getId() != authenticatedOrganizer.getId()) {
             throw new RuntimeException("You are not authorized to delete this event");
@@ -185,11 +167,9 @@ public class EventService {
             throw new RuntimeException("User is not authenticated");
         }
 
-        // Get the username/email from authentication
+        // Get the email from authentication
         String username = authentication.getName();
 
-        // Find organizer by username/email
-        // Modify this based on your Organizer entity structure
         User user = userRepository.findByEmail(username)
                 .orElseThrow(() -> new RuntimeException("Organizer not found for authenticated user"));
 

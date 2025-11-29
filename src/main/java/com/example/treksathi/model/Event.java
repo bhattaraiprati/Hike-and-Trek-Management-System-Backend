@@ -6,6 +6,7 @@ import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.Setter;
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.time.LocalTime;
 import java.util.List;
 
@@ -18,12 +19,10 @@ public class Event {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private int id;
 
-    // Organizer Link
     @ManyToOne
     @JoinColumn(name = "organizer_id", nullable = false)
     private Organizer organizer;
 
-    // Basic Info
     private String title;
 
     @Column(columnDefinition = "TEXT")
@@ -40,28 +39,38 @@ public class Event {
     private double price;
     private int maxParticipants;
 
-    // Meeting info
     private String meetingPoint;
     private LocalTime meetingTime;
 
-    // Contact
     private String contactPerson;
     private String contactEmail;
 
-    // Media
     private String bannerImageUrl;
 
-    // Lists
     @ElementCollection
     private List<String> includedServices;
 
     @ElementCollection
     private List<String> requirements;
 
-    // System fields
     @Enumerated(EnumType.STRING)
     private EventStatus status = EventStatus.PENDING;
 
-    private String createdAt;
-    private String updatedAt;
+    private LocalDateTime createdAt;
+    private LocalDateTime updatedAt;
+
+    @OneToMany(mappedBy = "event", cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.LAZY)
+    private List<EventRegistration> eventRegistration;
+
+    @OneToMany(mappedBy = "events", fetch = FetchType.LAZY, cascade = CascadeType.ALL)
+    private List<Reviews> reviews;
+    @PrePersist
+    public void onCreate() {
+        this.createdAt = LocalDateTime.now();
+    }
+
+    @PreUpdate
+    public void onUpdate() {
+        this.updatedAt = LocalDateTime.now();
+    }
 }
