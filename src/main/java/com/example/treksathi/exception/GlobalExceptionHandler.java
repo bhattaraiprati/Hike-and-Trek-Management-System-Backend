@@ -11,6 +11,15 @@ import java.util.Map;
 @RestControllerAdvice
 public class GlobalExceptionHandler {
 
+    @ExceptionHandler(UnauthorizedException.class)
+    public ResponseEntity<Map<String, Object>> handleUnauthorizedException(UnauthorizedException ex){
+        Map<String, Object> body = new HashMap<>();
+        body.put("Status", HttpStatus.UNAUTHORIZED.value());
+        body.put("error", "Unauthorized to access");
+        body.put("message", ex.getMessage());
+        return new ResponseEntity<>(body, HttpStatus.UNAUTHORIZED);
+    }
+
     @ExceptionHandler(InvalidCredentialsException.class)
     public ResponseEntity<Map<String, Object>> handleBadCredentialException(InvalidCredentialsException ex){
         Map<String, Object> body = new HashMap<>();

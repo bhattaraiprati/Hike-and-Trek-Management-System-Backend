@@ -1,11 +1,14 @@
 package com.example.treksathi.model;
 
 import jakarta.persistence.*;
+import jakarta.validation.constraints.Email;
 import lombok.Getter;
 import lombok.Setter;
 import org.hibernate.annotations.CreationTimestamp;
+import org.w3c.dom.stylesheets.LinkStyle;
 
 import java.time.LocalDateTime;
+import java.util.List;
 
 @Entity
 @Getter
@@ -27,10 +30,18 @@ public class EventRegistration {
     @CreationTimestamp
     private LocalDateTime registrationDate;
 
+    private String contact;
+
+    private String contactName;
+    private String email;
+
     private String paymentStatus;
-    private String attendanceStatus;
+
 
     @OneToOne(mappedBy = "eventRegistration", fetch = FetchType.LAZY)
     private Payments payments;
+
+    @OneToMany(mappedBy = "eventRegistration", fetch = FetchType.EAGER)
+    private List<EventParticipants> eventParticipants;
 
 }
