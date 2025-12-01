@@ -8,12 +8,8 @@ import com.example.treksathi.exception.UnauthorizedException;
 import com.example.treksathi.model.Event;
 import com.example.treksathi.model.Organizer;
 import com.example.treksathi.model.User;
-import com.example.treksathi.record.EventResponseRecord;
-import com.example.treksathi.record.OrganizerRecord;
 import com.example.treksathi.repository.EventRepository;
-import com.example.treksathi.repository.EventRegistrationRepository;
 import com.example.treksathi.repository.OrganizerRepository;
-import com.example.treksathi.repository.ReviewRepository;
 import com.example.treksathi.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.core.Authentication;
@@ -22,108 +18,131 @@ import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.nio.file.AccessDeniedException;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.List;
-import java.util.Optional;
 import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
-public class EventService {
+public class OrganizerEventService {
 
     private final EventRepository eventRepository;
     private final UserRepository userRepository;
     private final OrganizerRepository organizerRepository;
-    private final EventRegistrationRepository eventRegistrationRepository;
-    private final ReviewRepository reviewRepository;
-
     private final DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
 
-    // READ - Get all events
+
+    @Transactional
+    public EventResponseDTO createNewEvent(EventCreateDTO eventCreateDTO) {
+        // Get authenticated organizer
+        User user = getAuthenticatedOrganizer();
+
+        Organizer organizer = organizerRepository.findByUser(user);
+
+        Event event = new Event();
+        event.setOrganizer(organizer);
+
+        // Map DTO to Entity
+        mapDtoToEntity(eventCreateDTO, event);
+
+        event.setStatus(EventStatus.PENDING);
+        event.setCreatedAt(LocalDateTime.now());
+        event.setUpdatedAt(LocalDateTime.now());
+
+        Event savedEvent = eventRepository.save(event);
+
+        return mapEntityToDto(savedEvent);
+    }
+
     @Transactional(readOnly = true)
-    public List<EventResponseDTO> getAllEvents() {
-        List<Event> events = eventRepository.findAll();
+    public List<EventResponseDTO> getEventsByOrganizer(int organizerId, UserDetails userDetails)  {
+        Organizer organizer = organizerRepository.findByUserId(organizerId)
+                .orElseThrow(() -> new RuntimeException("Organizer not found with id: " + organizerId));
+
+        String authenticatedUsername = userDetails.getUsername();
+        String organizerOwnerUsername = organizer.getUser().getEmail();
+        if (!organizerOwnerUsername.equals(authenticatedUsername)) {
+            throw new UnauthorizedException("You are not authorized to view events for this organizer");
+        }
+        List<Event> events = eventRepository.findByOrganizer(organizer);
         return events.stream()
                 .map(this::mapEntityToDto)
                 .collect(Collectors.toList());
     }
 
-    // READ - Get event by ID with organizer details
+    //     READ - Get events by status (PENDING, APPROVED, REJECTED, CANCELLED, COMPLETED)
     @Transactional(readOnly = true)
-    public EventResponseRecord getEventById(int id) {
+    public List<EventResponseDTO> getEventsByStatus(String status) {
+        try {
+            EventStatus eventStatus = EventStatus.valueOf(status.toUpperCase());
+            List<Event> events = eventRepository.findByStatus(eventStatus);
+            return events.stream()
+                    .map(this::mapEntityToDto)
+                    .collect(Collectors.toList());
+        } catch (IllegalArgumentException e) {
+            throw new RuntimeException("Invalid status: " + status + ". Valid statuses are: PENDING, APPROVED, REJECTED, CANCELLED, COMPLETED");
+        }
+    }
+
+    //     UPDATE - Update an existing event
+//     Only the organizer who created the event can update it
+    @Transactional
+    public EventResponseDTO updateEvent(int id, EventCreateDTO eventCreateDTO) {
         Event event = eventRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("Event not found with id: " + id));
 
-        // Ensure organizer is loaded
-        Organizer organizer = event.getOrganizer();
 
-        // Calculate organizer stats
-        OrganizerRecord organizerRecord = createOrganizerRecord(organizer);
+        User user = getAuthenticatedOrganizer();
+        Organizer authenticatedOrganizer = organizerRepository.findByUser(user);
 
-        // Map event to record with organizer
-        return mapEntityToRecord(event, organizerRecord);
+
+        if (event.getOrganizer().getId() != authenticatedOrganizer.getId()) {
+            throw new RuntimeException("You are not authorized to update this event");
+        }
+
+        mapDtoToEntity(eventCreateDTO, event);
+        event.setUpdatedAt(LocalDateTime.now());
+
+        Event updatedEvent = eventRepository.save(event);
+        return mapEntityToDto(updatedEvent);
     }
 
-    private OrganizerRecord createOrganizerRecord(Organizer organizer) {
-        int totalEvents = eventRepository.countByOrganizerId(organizer.getId());
-        int totalParticipants = calculateTotalParticipants(organizer.getId());
-        ReviewStats reviewStats = calculateOrganizerRating(organizer.getId());
+    //     UPDATE - Update only the event status
+//     This can be used by admins and organizers
+    @Transactional
+    public EventResponseDTO updateEventStatus(int id, String status) {
+        Event event = eventRepository.findById(id)
+                .orElseThrow(() -> new RuntimeException("Event not found with id: " + id));
 
-        return new OrganizerRecord(
-                organizer.getId(),
-                organizer.getOrganization_name(),
-                organizer.getContact_person(),
-                organizer.getPhone(),
-                organizer.getAbout(),
-                organizer.getApproval_status().name(),
-                organizer.getApproval_status().name().equals("APPROVED"), // Assuming APPROVED means verified
-                totalEvents,
-                totalParticipants,
-                reviewStats.getAverageRating(),
-                reviewStats.getTotalReviews()
-        );
+        try {
+            EventStatus eventStatus = EventStatus.valueOf(status.toUpperCase());
+            event.setStatus(eventStatus);
+            event.setUpdatedAt(LocalDateTime.now());
+
+            Event updatedEvent = eventRepository.save(event);
+            return mapEntityToDto(updatedEvent);
+        } catch (IllegalArgumentException e) {
+            throw new RuntimeException("Invalid status: " + status + ". Valid statuses are: PENDING, APPROVED, REJECTED, CANCELLED, COMPLETED");
+        }
     }
 
-    private int calculateTotalParticipants(int organizerId) {
-        // This is a simplified version - you need to implement this based on your data model
-        // You might need to query EventRegistration and EventParticipants
-        return eventRegistrationRepository.sumParticipantsByOrganizerId(organizerId);
-    }
+    //     DELETE - Delete an event
+//     Only the organizer who created the event can delete it
+    @Transactional
+    public void deleteEvent(int id) {
+        Event event = eventRepository.findById(id)
+                .orElseThrow(() -> new RuntimeException("Event not found with id: " + id));
 
-    private ReviewStats calculateOrganizerRating(int organizerId) {
-        // Query average rating and count for organizer's events
-        Double avgRating = reviewRepository.findAverageRatingByOrganizerId(organizerId);
-        Long reviewCount = reviewRepository.countByOrganizerId(organizerId);
+        // Check if the authenticated user is the owner of this event
+        User user = getAuthenticatedOrganizer();
+        Organizer authenticatedOrganizer = organizerRepository.findByUser(user);
 
-        return new ReviewStats(
-                avgRating != null ? avgRating : 0.0,
-                reviewCount != null ? reviewCount.intValue() : 0
-        );
-    }
+        if (event.getOrganizer().getId() != authenticatedOrganizer.getId()) {
+            throw new RuntimeException("You are not authorized to delete this event");
+        }
 
-    private EventResponseRecord mapEntityToRecord(Event event, OrganizerRecord organizerRecord) {
-        return new EventResponseRecord(
-                event.getId(),
-                event.getTitle(),
-                event.getDescription(),
-                event.getLocation(),
-                event.getDate(),
-                event.getDurationDays(),
-                event.getDifficultyLevel().name(),
-                event.getPrice(),
-                event.getMaxParticipants(),
-                event.getMeetingPoint(),
-                event.getMeetingTime(),
-                event.getContactPerson(),
-                event.getContactEmail(),
-                event.getBannerImageUrl(),
-                event.getIncludedServices(),
-                event.getRequirements(),
-                event.getStatus().name(),
-                organizerRecord
-        );
+        eventRepository.delete(event);
     }
 
     private User getAuthenticatedOrganizer() {
@@ -186,26 +205,6 @@ public class EventService {
         dto.setIncludedServices(event.getIncludedServices());
         dto.setRequirements(event.getRequirements());
         dto.setStatus(event.getStatus().name());
-
         return dto;
-    }
-
-    // Inner class for review stats
-    private static class ReviewStats {
-        private final double averageRating;
-        private final int totalReviews;
-
-        public ReviewStats(double averageRating, int totalReviews) {
-            this.averageRating = averageRating;
-            this.totalReviews = totalReviews;
-        }
-
-        public double getAverageRating() {
-            return averageRating;
-        }
-
-        public int getTotalReviews() {
-            return totalReviews;
-        }
     }
 }
