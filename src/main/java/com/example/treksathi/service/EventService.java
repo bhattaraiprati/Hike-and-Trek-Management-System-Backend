@@ -1,45 +1,27 @@
 package com.example.treksathi.service;
 
-import com.example.treksathi.dto.organizer.EventCreateDTO;
-import com.example.treksathi.dto.organizer.EventResponseDTO;
-import com.example.treksathi.enums.DifficultyLevel;
-import com.example.treksathi.enums.EventStatus;
-import com.example.treksathi.exception.UnauthorizedException;
+import com.example.treksathi.dto.events.EventResponseDTO;
 import com.example.treksathi.model.Event;
 import com.example.treksathi.model.Organizer;
-import com.example.treksathi.model.User;
 import com.example.treksathi.record.EventResponseRecord;
 import com.example.treksathi.record.OrganizerRecord;
 import com.example.treksathi.repository.EventRepository;
 import com.example.treksathi.repository.EventRegistrationRepository;
-import com.example.treksathi.repository.OrganizerRepository;
 import com.example.treksathi.repository.ReviewRepository;
-import com.example.treksathi.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
-import org.springframework.security.core.Authentication;
-import org.springframework.security.core.context.SecurityContextHolder;
-import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-
-import java.nio.file.AccessDeniedException;
-import java.time.LocalDateTime;
-import java.time.format.DateTimeFormatter;
 import java.util.List;
-import java.util.Optional;
 import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
 public class EventService {
 
+    private final PaymentGatewayService paymentGatewayService;
     private final EventRepository eventRepository;
-    private final UserRepository userRepository;
-    private final OrganizerRepository organizerRepository;
     private final EventRegistrationRepository eventRegistrationRepository;
     private final ReviewRepository reviewRepository;
-
-    private final DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
 
     // READ - Get all events
     @Transactional(readOnly = true)
@@ -69,7 +51,7 @@ public class EventService {
     private OrganizerRecord createOrganizerRecord(Organizer organizer) {
         int totalEvents = eventRepository.countByOrganizerId(organizer.getId());
         int totalParticipants = calculateTotalParticipants(organizer.getId());
-        ReviewStats reviewStats = calculateOrganizerRating(organizer.getId());
+        ReviewStatus reviewStats = calculateOrganizerRating(organizer.getId());
 
         return new OrganizerRecord(
                 organizer.getId(),
@@ -87,17 +69,15 @@ public class EventService {
     }
 
     private int calculateTotalParticipants(int organizerId) {
-        // This is a simplified version - you need to implement this based on your data model
-        // You might need to query EventRegistration and EventParticipants
         return eventRegistrationRepository.sumParticipantsByOrganizerId(organizerId);
     }
 
-    private ReviewStats calculateOrganizerRating(int organizerId) {
+    private ReviewStatus calculateOrganizerRating(int organizerId) {
         // Query average rating and count for organizer's events
         Double avgRating = reviewRepository.findAverageRatingByOrganizerId(organizerId);
         Long reviewCount = reviewRepository.countByOrganizerId(organizerId);
 
-        return new ReviewStats(
+        return new ReviewStatus(
                 avgRating != null ? avgRating : 0.0,
                 reviewCount != null ? reviewCount.intValue() : 0
         );
@@ -126,46 +106,6 @@ public class EventService {
         );
     }
 
-    private User getAuthenticatedOrganizer() {
-        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
-
-        if (authentication == null || !authentication.isAuthenticated()) {
-            throw new RuntimeException("User is not authenticated");
-        }
-
-        // Get the email from authentication
-        String username = authentication.getName();
-
-        User user = userRepository.findByEmail(username)
-                .orElseThrow(() -> new RuntimeException("Organizer not found for authenticated user"));
-
-        return user;
-    }
-
-    private void mapDtoToEntity(EventCreateDTO dto, Event event) {
-        event.setTitle(dto.getTitle());
-        event.setDescription(dto.getDescription());
-        event.setLocation(dto.getLocation());
-        event.setDate(dto.getDate());
-        event.setDurationDays(dto.getDurationDays());
-
-        try {
-            event.setDifficultyLevel(DifficultyLevel.valueOf(dto.getDifficultyLevel().toUpperCase()));
-        } catch (IllegalArgumentException e) {
-            throw new RuntimeException("Invalid difficulty level: " + dto.getDifficultyLevel() +
-                    ". Valid levels are: EASY, MODERATE, DIFFICULT, EXTREME");
-        }
-
-        event.setPrice(dto.getPrice());
-        event.setMaxParticipants(dto.getMaxParticipants());
-        event.setMeetingPoint(dto.getMeetingPoint());
-        event.setMeetingTime(dto.getMeetingTime());
-        event.setContactPerson(dto.getContactPerson());
-        event.setContactEmail(dto.getContactEmail());
-        event.setBannerImageUrl(dto.getBannerImageUrl());
-        event.setIncludedServices(dto.getIncludedServices());
-        event.setRequirements(dto.getRequirements());
-    }
 
     private EventResponseDTO mapEntityToDto(Event event) {
         EventResponseDTO dto = new EventResponseDTO();
@@ -191,11 +131,11 @@ public class EventService {
     }
 
     // Inner class for review stats
-    private static class ReviewStats {
+    private static class ReviewStatus {
         private final double averageRating;
         private final int totalReviews;
 
-        public ReviewStats(double averageRating, int totalReviews) {
+        public ReviewStatus(double averageRating, int totalReviews) {
             this.averageRating = averageRating;
             this.totalReviews = totalReviews;
         }

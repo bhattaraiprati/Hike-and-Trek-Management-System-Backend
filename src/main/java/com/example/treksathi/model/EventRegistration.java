@@ -1,5 +1,6 @@
 package com.example.treksathi.model;
 
+import com.example.treksathi.enums.EventRegistrationStatus;
 import jakarta.persistence.*;
 import jakarta.validation.constraints.Email;
 import lombok.Getter;
@@ -35,8 +36,8 @@ public class EventRegistration {
     private String contactName;
     private String email;
 
-    private String paymentStatus;
-
+    @Enumerated(EnumType.STRING)
+    private EventRegistrationStatus status;
 
     @OneToOne(mappedBy = "eventRegistration", fetch = FetchType.LAZY)
     private Payments payments;
