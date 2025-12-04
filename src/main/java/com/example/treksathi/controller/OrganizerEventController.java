@@ -1,7 +1,7 @@
 package com.example.treksathi.controller;
 
-import com.example.treksathi.dto.organizer.EventCreateDTO;
-import com.example.treksathi.dto.organizer.EventResponseDTO;
+import com.example.treksathi.dto.events.EventCreateDTO;
+import com.example.treksathi.dto.events.EventResponseDTO;
 import com.example.treksathi.service.OrganizerEventService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;

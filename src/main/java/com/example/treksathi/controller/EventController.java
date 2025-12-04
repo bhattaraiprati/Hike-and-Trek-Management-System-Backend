@@ -1,27 +1,29 @@
 package com.example.treksathi.controller;
 
-import com.example.treksathi.dto.organizer.EventCreateDTO;
-import com.example.treksathi.dto.organizer.EventResponseDTO;
-import com.example.treksathi.model.Event;
+import com.example.treksathi.dto.events.EventRegisterDTO;
+import com.example.treksathi.dto.events.EventResponseDTO;
+import com.example.treksathi.model.EventRegistration;
 import com.example.treksathi.record.EventResponseRecord;
 import com.example.treksathi.service.EventService;
-import jakarta.validation.Valid;
+import com.example.treksathi.service.PaymentGatewayService;
 import lombok.RequiredArgsConstructor;
-import org.springframework.http.HttpStatus;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.ResponseEntity;
-import org.springframework.security.core.annotation.AuthenticationPrincipal;
-import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.web.bind.annotation.*;
 
-import java.nio.file.AccessDeniedException;
 import java.util.List;
 
 @RestController
 @RequestMapping("/event")
 @RequiredArgsConstructor
+@Slf4j
 public class EventController {
 
     private final EventService eventService;
+
+    private final PaymentGatewayService paymentGatewayService;
+
+    private static final String FRONTEND_URL = "http://localhost:5173";
 
     // Get all event
     @GetMapping("/all")
@@ -36,14 +38,39 @@ public class EventController {
         return ResponseEntity.ok(event);
     }
 
+    @PostMapping("/register/event")
+    public ResponseEntity<?> registerEvent(@RequestBody EventRegisterDTO eventRegisterDTO){
+    Object paymentRequest = paymentGatewayService.initiateEsewaPayment(eventRegisterDTO);
+        return ResponseEntity.ok(paymentRequest);
+    }
 
 
+    @GetMapping("/registration/success")
+    public ResponseEntity<Void> handleEsewaSuccess(@RequestParam(value = "data", required = false) String data) {
+        log.info("eSewa success callback received");
 
+        try {
+            EventRegistration registration = paymentGatewayService.verifyAndConfirmPayment(data);
+            String redirectUrl = String.format(
+                    "%s/hiker-dashboard/booking-confirmation/%d?status=success",
+                    FRONTEND_URL, registration.getId()
+            );
+            return ResponseEntity.status(302).header("Location", redirectUrl).build();
 
+        } catch (Exception e) {
+            log.error("Payment failed: {}", e.getMessage());
+            return ResponseEntity.status(302)
+                    .header("Location", FRONTEND_URL + "/hiker-dashboard/booking-confirmation?status=failed&error=payment_failed")
+                    .build();
+        }
+    }
 
-
-
-
-
+    @GetMapping("/registration/failure")
+    public ResponseEntity<Void> handleEsewaFailure() {
+        log.info("eSewa payment failed or cancelled");
+        return ResponseEntity.status(302)
+                .header("Location", FRONTEND_URL + "/hiker-dashboard/booking-confirmation?status=failed&error=cancelled")
+                .build();
+    }
 
 }

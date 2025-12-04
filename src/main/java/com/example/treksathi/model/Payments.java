@@ -5,6 +5,7 @@ import com.example.treksathi.enums.PaymentStatus;
 import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.Setter;
+import org.hibernate.annotations.CreationTimestamp;
 
 import java.time.LocalDateTime;
 
@@ -21,7 +22,8 @@ public class Payments {
     @JoinColumn(name = "registration_id", nullable = false)
     private EventRegistration eventRegistration;
 
-    private String paymentGatewayId;
+
+    private String transactionUuid;
     private Double amount;
 
     @Enumerated(EnumType.STRING)
@@ -29,7 +31,9 @@ public class Payments {
     @Enumerated(EnumType.STRING)
     private PaymentStatus paymentStatus;
 
+    @CreationTimestamp
     private LocalDateTime transactionDate;
+
     private String transactionReference;
 
 }

@@ -1,7 +1,7 @@
 package com.example.treksathi.service;
 
-import com.example.treksathi.dto.organizer.EventCreateDTO;
-import com.example.treksathi.dto.organizer.EventResponseDTO;
+import com.example.treksathi.dto.events.EventCreateDTO;
+import com.example.treksathi.dto.events.EventResponseDTO;
 import com.example.treksathi.enums.DifficultyLevel;
 import com.example.treksathi.enums.EventStatus;
 import com.example.treksathi.exception.UnauthorizedException;

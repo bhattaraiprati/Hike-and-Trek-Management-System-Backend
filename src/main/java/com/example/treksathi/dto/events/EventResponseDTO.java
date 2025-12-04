@@ -1,4 +1,4 @@
-package com.example.treksathi.dto.organizer;
+package com.example.treksathi.dto.events;
 
 import lombok.Getter;
 import lombok.Setter;
