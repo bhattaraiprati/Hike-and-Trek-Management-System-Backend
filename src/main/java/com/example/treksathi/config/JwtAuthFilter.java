@@ -1,11 +1,13 @@
 package com.example.treksathi.config;
 
+import com.example.treksathi.exception.TokenExpireException;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import net.bytebuddy.implementation.bytecode.Throw;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.core.userdetails.UserDetails;
@@ -25,7 +27,7 @@ public class JwtAuthFilter extends OncePerRequestFilter {
     private final JWTService jwtService;
 
     @Override
-    protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain filterChain) throws ServletException, IOException {
+    protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain filterChain) throws ServletException, TokenExpireException, IOException {
         log.info("incoming request: {}", request.getRequestURI());
 
         final String authHeader = request.getHeader("Authorization");
@@ -49,7 +51,8 @@ public class JwtAuthFilter extends OncePerRequestFilter {
 
         }
         }
-        catch (Exception e){
+        catch (TokenExpireException e){
+            new TokenExpireException("Requested token is Expired");
             log.warn("Invalid JWT: {}", e.getMessage());
         }
         filterChain.doFilter(request, response);

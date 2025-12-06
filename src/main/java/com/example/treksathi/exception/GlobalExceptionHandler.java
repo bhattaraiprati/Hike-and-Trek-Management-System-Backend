@@ -46,4 +46,13 @@ public class GlobalExceptionHandler {
         body.put("message", ex.getMessage());
         return new ResponseEntity<>(body, HttpStatus.INTERNAL_SERVER_ERROR);
     }
+
+    @ExceptionHandler(TokenExpireException.class)
+    public ResponseEntity<Map<String, Object>> handleTokenExpireException(TokenExpireException ex){
+        Map<String, Object> body = new HashMap<>();
+        body.put("Status", HttpStatus.BAD_REQUEST.value());
+        body.put("error", "Token is Expired");
+        body.put("message", ex.getMessage());
+        return new ResponseEntity<>(body, HttpStatus.BAD_REQUEST);
+    }
 }
