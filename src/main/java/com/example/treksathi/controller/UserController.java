@@ -1,5 +1,6 @@
 package com.example.treksathi.controller;
 
+import com.example.treksathi.dto.user.LoginResponseDTO;
 import com.example.treksathi.dto.user.OTPVerificationDTO;
 import com.example.treksathi.dto.user.UserCreateDTO;
 import com.example.treksathi.dto.user.UserResponseDTO;
@@ -16,6 +17,8 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.dao.DuplicateKeyException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
+import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.Collections;
@@ -47,13 +50,20 @@ public class UserController {
     @PostMapping("/login")
     public ResponseEntity<?> userLogin(@Valid @RequestBody UserCreateDTO userCreateDTO) {
         try {
-            String token = userServices.verify(userCreateDTO);
-            return ResponseEntity.ok(Collections.singletonMap("token", token));
+            LoginResponseDTO token = userServices.verify(userCreateDTO);
+            return ResponseEntity.ok(token);
         } catch (UnauthorizedException | InvalidCredentialsException | UsernameNotFoundException e) {
             Map<String, String> error = new HashMap<>();
             error.put("message", e.getMessage());
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(error);
         }
+    }
+
+    @PostMapping("/refreshToken")
+    public ResponseEntity<LoginResponseDTO> refreshToken(@RequestBody LoginResponseDTO loginRequesteDTO){
+        LoginResponseDTO loginResponseDTO = userServices.generateNewAccessToken(loginRequesteDTO.getRefreshToken());
+        return ResponseEntity.ok(loginResponseDTO);
+
     }
     @PostMapping("/verify-otp")
     public ResponseEntity<?> verifyOTP(@Valid @RequestBody OTPVerificationDTO otpData) {
@@ -118,6 +128,8 @@ public class UserController {
         }
         return ResponseEntity.status(HttpStatus.FOUND).body(user);
     }
+
+
 
 
 

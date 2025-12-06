@@ -1,6 +1,7 @@
 package com.example.treksathi.controller;
 
 import com.example.treksathi.model.EventRegistration;
+import com.example.treksathi.record.BookingResponseRecord;
 import com.example.treksathi.record.EventRegistrationResponse;
 import com.example.treksathi.service.EventRegistrationService;
 import lombok.RequiredArgsConstructor;
@@ -30,9 +31,9 @@ public class EventRegistrationController {
 
     @GetMapping("/events/{id}")
 
-    public ResponseEntity<List<EventRegistrationResponse>> getALlEventOfUser(@PathVariable int id){
+    public ResponseEntity<List<BookingResponseRecord>> getALlEventOfUser(@PathVariable int id){
 
-        List<EventRegistrationResponse> eventRegistration = eventRegistrationService.getALlEventsByUserId(id);
+        List<BookingResponseRecord> eventRegistration = eventRegistrationService.getALlEventsByUserId(id);
         return ResponseEntity.ok(eventRegistration);
     }
 

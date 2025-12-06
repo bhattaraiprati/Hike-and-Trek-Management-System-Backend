@@ -73,4 +73,10 @@ public class EventController {
                 .build();
     }
 
+    @GetMapping("/check")
+    public ResponseEntity<?> checkTokenExpiry() {
+
+        return ResponseEntity.ok("Successful");
+    }
+
 }

@@ -13,6 +13,7 @@ import com.example.treksathi.exception.UnauthorizedException;
 import com.example.treksathi.exception.UserAlreadyExistException;
 import com.example.treksathi.model.OTP;
 import com.example.treksathi.model.Organizer;
+import com.example.treksathi.model.RefreshToken;
 import com.example.treksathi.model.User;
 import com.example.treksathi.repository.OTPRepository;
 import com.example.treksathi.repository.OrganizerRepository;
@@ -46,6 +47,7 @@ public class UserServices {
     private final EmailSendService emailSendService;
     private final OrganizerRepository organizerRepository;
     private final JWTService jwtService;
+    private final RefreshTokenService refreshTokenService;
 
     @Transactional
     public User signup(UserCreateDTO request) {
@@ -77,7 +79,7 @@ public class UserServices {
 
 //    public
 
-    public String verify(UserCreateDTO userCreateDTO) {
+    public LoginResponseDTO verify(UserCreateDTO userCreateDTO) {
         try {
 
             Optional<User> userOpt = userRepository.findByEmail(userCreateDTO.getEmail());
@@ -85,9 +87,7 @@ public class UserServices {
             if (userOpt.isEmpty()) {
                 throw new UsernameNotFoundException("User not found with email: " + userCreateDTO.getEmail());
             }
-
             User user = userOpt.get();
-
             // if user is an organizer and verify approval status BEFORE authentication
             if (user.getRole() == Role.ORGANIZER) {
                 Organizer organizer = organizerRepository.findByUser(user);
@@ -100,21 +100,25 @@ public class UserServices {
                     throw new UnauthorizedException("Your account has been rejected. Please contact support.");
                 }
             }
-
-
             UsernamePasswordAuthenticationToken authToken =
                     new UsernamePasswordAuthenticationToken(userCreateDTO.getEmail(), userCreateDTO.getPassword());
 
             Authentication auth = authenticationManager.authenticate(authToken);
 
             if (auth.isAuthenticated()) {
+                RefreshToken refreshToken = refreshTokenService.createRefreshToken(user.getEmail());
+
                 String token = jwtService.generateToken(
                         user.getId(),
                         user.getEmail(),
                         user.getName(),
                         String.valueOf(user.getRole())
                 );
-                return token;
+
+                return LoginResponseDTO.builder()
+                        .token(token)
+                        .refreshToken(refreshToken.getToken())
+                        .build();
             } else {
                 throw new InvalidCredentialsException("Invalid credentials");
             }
@@ -122,6 +126,22 @@ public class UserServices {
         } catch (BadCredentialsException e) {
             throw new InvalidCredentialsException("Invalid email or password");
         }
+    }
+
+    public LoginResponseDTO generateNewAccessToken( String token){
+        RefreshToken refreshToken = refreshTokenService.findByToken(token).orElseThrow( () -> new RuntimeException( "Refresh Token is not in DB."));
+        return refreshTokenService.findByToken(token)
+                .map(refreshTokenService::verifyExpiration)
+                .map(RefreshToken::getUser)
+                .map(user -> {
+                    User user1 = userRepository.findByEmail(user.getEmail()).orElse(null);
+                    String jwt = jwtService.generateToken(user1.getId(), user1.getEmail(), user1.getName(), String.valueOf(user1.getRole()));
+                    return LoginResponseDTO.builder()
+                            .token(jwt)
+                            .refreshToken(token)
+                            .build();
+                }).orElseThrow(() ->new RuntimeException("Refresh Token is not in DB..!!"));
+
     }
 
 
@@ -250,6 +270,7 @@ public class UserServices {
             }
         }
 
+        RefreshToken refreshToken = refreshTokenService.createRefreshToken(user.getEmail());
         // Generate JWT token
         String token = jwtService.generateToken(
                 user.getId(),
@@ -257,12 +278,9 @@ public class UserServices {
                 user.getName(),
                 String.valueOf(user.getRole())
         );
-
         LoginResponseDTO loginResponseDTO = new LoginResponseDTO();
-        loginResponseDTO.setId(user.getId());
-        loginResponseDTO.setJwt(token);
-
-
+        loginResponseDTO.setToken(token);
+        loginResponseDTO.setRefreshToken(refreshToken.getToken());
         return ResponseEntity.ok(loginResponseDTO);
 
     }
