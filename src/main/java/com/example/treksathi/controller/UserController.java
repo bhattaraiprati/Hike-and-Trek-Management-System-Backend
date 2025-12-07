@@ -1,24 +1,26 @@
 package com.example.treksathi.controller;
 
-import com.example.treksathi.dto.user.LoginResponseDTO;
-import com.example.treksathi.dto.user.OTPVerificationDTO;
-import com.example.treksathi.dto.user.UserCreateDTO;
-import com.example.treksathi.dto.user.UserResponseDTO;
+import com.example.treksathi.config.JWTService;
+import com.example.treksathi.dto.user.*;
 import com.example.treksathi.enums.AccountStatus;
 import com.example.treksathi.exception.InvalidCredentialsException;
 import com.example.treksathi.exception.UnauthorizedException;
 import com.example.treksathi.exception.UsernameNotFoundException;
 import com.example.treksathi.model.User;
+import com.example.treksathi.record.BookingResponseRecord;
+import com.example.treksathi.service.InMemoryTokenBlacklist;
 import com.example.treksathi.service.UserServices;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import net.bytebuddy.asm.Advice;
 import org.springframework.dao.DuplicateKeyException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.security.core.userdetails.UserDetails;
+import org.springframework.util.StringUtils;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.Collections;
@@ -119,6 +121,33 @@ public class UserController {
         }
     }
 
+    @PostMapping("/uploadImage")
+    public ResponseEntity<?> uploadImage(@RequestBody UploadIImageDTO uploadIImageDTO){
+        User url = userServices.uploadImageUrl(uploadIImageDTO);
+        return ResponseEntity.ok(url.getProfileImage());
+    }
+
+    @GetMapping("/getProfileImage")
+    public ResponseEntity<?> getProfileImage(@RequestParam int id){
+        String url = userServices.getProfileUrl(id);
+        return ResponseEntity.ok(url);
+    }
+
+    @PostMapping("/logout")
+    public ResponseEntity<String> logout(HttpServletRequest request){
+        try {
+            boolean status = userServices.logoutUser(request);
+            if (status){
+                return ResponseEntity.ok("Logout Successfully");
+            }
+            return ResponseEntity.badRequest().body("Failed to black list token");
+        }
+        catch (Exception e){
+            return ResponseEntity.badRequest().body("No token provided");
+        }
+
+
+    }
     @GetMapping("/find")
     public ResponseEntity<?> findUser(@RequestParam String email) {
 

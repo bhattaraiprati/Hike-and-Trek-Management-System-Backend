@@ -37,5 +37,13 @@ public class EventRegistrationController {
         return ResponseEntity.ok(eventRegistration);
     }
 
+    @GetMapping("/upcoming")
+    public ResponseEntity<?> getUpcomingEvents(@RequestParam int id){
+        List<BookingResponseRecord> eventList = eventRegistrationService.getAllUpcomingEvent(id);
+
+        return ResponseEntity.ok(eventList);
+
+    }
+
 
 }

@@ -1,5 +1,6 @@
 package com.example.treksathi.service;
 
+import com.example.treksathi.exception.EventNotFoundException;
 import com.example.treksathi.mapper.BookingResponseMapper;
 import com.example.treksathi.mapper.EventRegistrationMapper;
 import com.example.treksathi.model.EventRegistration;
@@ -33,5 +34,14 @@ public class EventRegistrationService {
         return reg.stream()
                 .map(bookingMapper::toResponse)
                 .toList();
+    }
+
+    public List<BookingResponseRecord> getAllUpcomingEvent(int id){
+        List<EventRegistration> registrations = eventRegistrationRepository.findActiveEventByUserId(id, "ACTIVE")
+                .orElseThrow(()-> new EventNotFoundException("Event is Not Found For this userId"+ id));
+
+         return  registrations.stream()
+                 .map(bookingMapper::toResponse)
+                 .toList();
     }
 }

@@ -7,6 +7,7 @@ import org.springframework.web.bind.annotation.RestControllerAdvice;
 
 import java.util.HashMap;
 import java.util.Map;
+import java.util.SimpleTimeZone;
 
 @RestControllerAdvice
 public class GlobalExceptionHandler {
@@ -54,5 +55,14 @@ public class GlobalExceptionHandler {
         body.put("error", "Token is Expired");
         body.put("message", ex.getMessage());
         return new ResponseEntity<>(body, HttpStatus.BAD_REQUEST);
+    }
+
+    @ExceptionHandler(EventNotFoundException.class)
+    public ResponseEntity<Map<String, Object>> handleEventNotFoundException(EventNotFoundException ex){
+        Map<String, Object> body = new HashMap<>();
+        body.put("Status", HttpStatus.NOT_FOUND.value());
+        body.put("error", "Event Not Found");
+        body.put("message", ex.getMessage());
+        return new ResponseEntity<>(body, HttpStatus.NOT_FOUND);
     }
 }

@@ -1,6 +1,8 @@
 package com.example.treksathi.service;
 
+import com.example.treksathi.exception.UsernameNotFoundException;
 import com.example.treksathi.model.RefreshToken;
+import com.example.treksathi.model.User;
 import com.example.treksathi.repository.RefreshTokenRepository;
 import com.example.treksathi.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
@@ -38,7 +40,12 @@ public class RefreshTokenService {
             throw  new RuntimeException(token.getToken() + " Refresh token is expired. Please make a new login..!");
         }
         return token;
+    }
 
+    public boolean deleteRefreshToken(User user){
+        RefreshToken refreshToken = refreshTokenRepository.findByUser(user).orElseThrow(()-> new UsernameNotFoundException("User Not Found"));
+        refreshTokenRepository.delete(refreshToken);
+        return true;
     }
 
 

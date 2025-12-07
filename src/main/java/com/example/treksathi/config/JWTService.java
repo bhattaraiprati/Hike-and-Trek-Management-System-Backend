@@ -53,6 +53,7 @@ public class JWTService {
         return claims.getSubject();
     }
 
+
     public boolean isTokenValid(String token, UserDetails userDetails) {
         final String username = getUsernameFormToken(token);
         boolean isValid = username.equals(userDetails.getUsername()) && !isTokenExpired(token);

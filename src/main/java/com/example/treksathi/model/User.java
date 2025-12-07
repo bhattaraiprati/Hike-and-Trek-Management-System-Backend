@@ -23,6 +23,7 @@ public class User {
     private String password;
     private String name;
     private String phone;
+    private String profileImage;
 
     @OneToOne(mappedBy = "user", cascade = CascadeType.ALL, orphanRemoval = true)
     private Organizer organizer;
