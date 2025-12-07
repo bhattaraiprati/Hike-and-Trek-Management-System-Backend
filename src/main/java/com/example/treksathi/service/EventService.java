@@ -3,6 +3,7 @@ package com.example.treksathi.service;
 import com.example.treksathi.dto.events.EventResponseDTO;
 import com.example.treksathi.model.Event;
 import com.example.treksathi.model.Organizer;
+import com.example.treksathi.record.BookingResponseRecord;
 import com.example.treksathi.record.EventResponseRecord;
 import com.example.treksathi.record.OrganizerRecord;
 import com.example.treksathi.repository.EventRepository;
@@ -47,6 +48,8 @@ public class EventService {
         // Map event to record with organizer
         return mapEntityToRecord(event, organizerRecord);
     }
+
+
 
     private OrganizerRecord createOrganizerRecord(Organizer organizer) {
         int totalEvents = eventRepository.countByOrganizerId(organizer.getId());

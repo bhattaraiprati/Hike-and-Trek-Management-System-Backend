@@ -2,6 +2,7 @@ package com.example.treksathi.service;
 
 import com.example.treksathi.config.JWTService;
 import com.example.treksathi.dto.user.LoginResponseDTO;
+import com.example.treksathi.dto.user.UploadIImageDTO;
 import com.example.treksathi.dto.user.UserCreateDTO;
 import com.example.treksathi.enums.AccountStatus;
 import com.example.treksathi.enums.Approval_status;
@@ -18,6 +19,7 @@ import com.example.treksathi.model.User;
 import com.example.treksathi.repository.OTPRepository;
 import com.example.treksathi.repository.OrganizerRepository;
 import com.example.treksathi.repository.UserRepository;
+import jakarta.servlet.http.HttpServletRequest;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.ResponseEntity;
@@ -30,6 +32,7 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.oauth2.core.user.OAuth2User;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.util.StringUtils;
 
 import java.time.LocalDateTime;
 import java.util.Optional;
@@ -48,6 +51,8 @@ public class UserServices {
     private final OrganizerRepository organizerRepository;
     private final JWTService jwtService;
     private final RefreshTokenService refreshTokenService;
+    private final InMemoryTokenBlacklist inMemoryTokenBlacklist;
+
 
     @Transactional
     public User signup(UserCreateDTO request) {
@@ -226,6 +231,36 @@ public class UserServices {
         return true;
     }
 
+    public User uploadImageUrl(UploadIImageDTO image){
+        User user = userRepository.findById(image.getId()).orElse(null);
+        user.setProfileImage(image.getImage());
+        return userRepository.save(user);
+    }
+    public String getProfileUrl(int id){
+        User user = userRepository.findById(id).orElse(null);
+
+        return user.getProfileImage();
+    }
+
+    public boolean logoutUser(HttpServletRequest request){
+        String authorizationHeader = request.getHeader("Authorization");
+        log.info("The authentication header"+ authorizationHeader);
+        try{
+            if (StringUtils.hasText(authorizationHeader) && authorizationHeader.startsWith("Bearer ")){
+                String token = authorizationHeader.substring(7);
+                log.info("The authentication token"+ token);
+                inMemoryTokenBlacklist.addToBlackList(token);
+                String email = jwtService.getUsernameFormToken(token);
+                User user = userRepository.findByEmail(email).orElse(null);
+                refreshTokenService.deleteRefreshToken(user);
+                return true;
+            }
+        }
+        catch (Exception e){
+            throw new RuntimeException("Exception Occur"+e);
+        }
+        return false;
+    }
 
     public Optional<User> findByEmail(String email) {
         return userRepository.findByEmail(email);
