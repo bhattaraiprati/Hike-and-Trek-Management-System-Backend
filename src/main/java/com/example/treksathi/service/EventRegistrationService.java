@@ -1,12 +1,12 @@
 package com.example.treksathi.service;
 
+import com.example.treksathi.enums.EventRegistrationStatus;
+import com.example.treksathi.enums.EventStatus;
 import com.example.treksathi.exception.EventNotFoundException;
 import com.example.treksathi.mapper.BookingResponseMapper;
 import com.example.treksathi.mapper.EventRegistrationMapper;
 import com.example.treksathi.model.EventRegistration;
-import com.example.treksathi.record.BookingResponseRecord;
-import com.example.treksathi.record.EventRegistrationResponse;
-import com.example.treksathi.record.EventResponseRecord;
+import com.example.treksathi.record.*;
 import com.example.treksathi.repository.EventRegistrationRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -28,20 +28,18 @@ public class EventRegistrationService {
         return mapper.toResponse(reg);
     }
 
-    public List<BookingResponseRecord> getALlEventsByUserId(int id){
-        List<EventRegistration> reg = eventRegistrationRepository.findByUserId(id).orElseThrow(null);
+    public List<BookingResponseRecord> getAllEventsByUserId(int id, List<EventRegistrationStatus> status){
+        List<EventRegistration> reg = eventRegistrationRepository.findByUserIdAndStatus(id, status).orElseThrow(null);
 
         return reg.stream()
                 .map(bookingMapper::toResponse)
                 .toList();
     }
 
-    public List<BookingResponseRecord> getAllUpcomingEvent(int id){
-        List<EventRegistration> registrations = eventRegistrationRepository.findActiveEventByUserId(id, "ACTIVE")
+    public List<UpcommingEventRecord> getAllUpcomingEvent(int id){
+        List<UpcommingEventRecord> registrations = eventRegistrationRepository.findActiveEventByUserId(id, EventStatus.ACTIVE)
                 .orElseThrow(()-> new EventNotFoundException("Event is Not Found For this userId"+ id));
 
-         return  registrations.stream()
-                 .map(bookingMapper::toResponse)
-                 .toList();
+         return  registrations;
     }
 }

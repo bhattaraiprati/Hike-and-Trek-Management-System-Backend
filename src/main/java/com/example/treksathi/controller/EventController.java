@@ -4,6 +4,7 @@ import com.example.treksathi.dto.events.EventRegisterDTO;
 import com.example.treksathi.dto.events.EventResponseDTO;
 import com.example.treksathi.dto.pagination.PaginatedResponseDTO;
 import com.example.treksathi.model.EventRegistration;
+import com.example.treksathi.record.EventCardResponse;
 import com.example.treksathi.record.EventResponseRecord;
 import com.example.treksathi.service.EventService;
 import com.example.treksathi.service.PaymentGatewayService;
@@ -28,11 +29,11 @@ public class EventController {
 
     // Get all event
     @GetMapping("/all")
-    public ResponseEntity<PaginatedResponseDTO<EventResponseDTO>> getAllEvents(
+    public ResponseEntity<PaginatedResponseDTO<EventCardResponse>> getAllEvents(
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "10") int size
     ) {
-        PaginatedResponseDTO<EventResponseDTO> events = eventService.getAllEvents(page, size);
+        PaginatedResponseDTO<EventCardResponse> events = eventService.getAllEvents(page, size);
         return ResponseEntity.ok(events);
     }
     // Get Event details by the event ID

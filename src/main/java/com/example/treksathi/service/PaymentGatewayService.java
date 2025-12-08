@@ -80,7 +80,7 @@ public class PaymentGatewayService {
         eventRegistration.setEvent(event);
         eventRegistration.setUser(user);
         mapDtoToEntity(eventRegisterDTO, eventRegistration);
-        eventRegistration.setStatus(EventRegistrationStatus.valueOf("PENDING"));
+        eventRegistration.setStatus(EventRegistrationStatus.SUCCESS);
 
         // Save EventRegistration first to get the ID
         eventRegistration = eventRegistrationRepository.save(eventRegistration);

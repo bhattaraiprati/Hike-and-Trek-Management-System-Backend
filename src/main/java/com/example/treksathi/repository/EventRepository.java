@@ -3,6 +3,7 @@ package com.example.treksathi.repository;
 import com.example.treksathi.enums.EventStatus;
 import com.example.treksathi.model.Event;
 import com.example.treksathi.model.Organizer;
+import com.example.treksathi.record.EventCardResponse;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
@@ -29,4 +30,24 @@ public interface EventRepository extends JpaRepository<Event, Integer> {
 
     @Query("SELECT COUNT(e) FROM Event e WHERE e.organizer.id = :organizerId")
     int countByOrganizerId(@Param("organizerId") int organizerId);
+
+    @Query("SELECT new com.example.treksathi.record.EventCardResponse(" +
+            "e.id, e.title, e.description, e.location, e.date, " +
+            "e.durationDays, " +
+            "CAST(e.difficultyLevel AS string), " +
+            "e.price, e.maxParticipants, e.bannerImageUrl, " +
+            "CAST(e.status AS string), " +
+            "COUNT(DISTINCT ep.id)) " +
+            "FROM Event e " +
+            "LEFT JOIN e.eventRegistration er " +
+            "LEFT JOIN er.eventParticipants ep " +
+            "WHERE e.status = :status " +
+            "GROUP BY e.id, e.title, e.description, e.location, e.date, " +
+            "e.durationDays, e.difficultyLevel, e.price, e.maxParticipants, " +
+            "e.bannerImageUrl, e.status"+
+            " order by e.date desc ")
+    Page<EventCardResponse> findEventCardsWithParticipantCount(
+            @Param("status") EventStatus status,
+            Pageable pageable
+    );
 }

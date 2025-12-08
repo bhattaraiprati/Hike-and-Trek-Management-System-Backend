@@ -3,11 +3,16 @@ package com.example.treksathi.service;
 import com.example.treksathi.dto.events.EventResponseDTO;
 import com.example.treksathi.dto.pagination.PaginatedResponseDTO;
 import com.example.treksathi.enums.EventStatus;
+import com.example.treksathi.mapper.BookingResponseMapper;
+import com.example.treksathi.mapper.EventRegistrationMapper;
 import com.example.treksathi.model.Event;
+import com.example.treksathi.model.EventParticipants;
 import com.example.treksathi.model.Organizer;
 import com.example.treksathi.record.BookingResponseRecord;
+import com.example.treksathi.record.EventCardResponse;
 import com.example.treksathi.record.EventResponseRecord;
 import com.example.treksathi.record.OrganizerRecord;
+import com.example.treksathi.repository.EventParticipantsRepository;
 import com.example.treksathi.repository.EventRepository;
 import com.example.treksathi.repository.EventRegistrationRepository;
 import com.example.treksathi.repository.ReviewRepository;
@@ -29,11 +34,14 @@ public class EventService {
     private final EventRepository eventRepository;
     private final EventRegistrationRepository eventRegistrationRepository;
     private final ReviewRepository reviewRepository;
+    private final EventParticipantsRepository eventParticipantsRepository;
+    private final EventRegistrationMapper eventMapper;
+
 
     // READ - Get all events
     @Transactional(readOnly = true)
-    public PaginatedResponseDTO<EventResponseDTO> getAllEvents(int page, int size) {
-        Page<Event> eventPage = eventRepository.findByStatus(
+    public PaginatedResponseDTO<EventCardResponse> getAllEvents(int page, int size) {
+        Page<EventCardResponse> eventPage = eventRepository.findEventCardsWithParticipantCount(
                 EventStatus.ACTIVE,
                 PageRequest.of(page, size)
         );
@@ -43,11 +51,7 @@ public class EventService {
                 eventPage.getNumber() + 1,
                 eventPage.getTotalPages());
 
-        // Map entities to DTOs
-        Page<EventResponseDTO> dtoPage = eventPage.map(this::mapEntityToDto);
-
-        // Return paginated response
-        return PaginatedResponseDTO.of(dtoPage);
+        return PaginatedResponseDTO.of(eventPage);
     }
 
     // READ - Get event by ID with organizer details
