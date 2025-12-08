@@ -1,6 +1,8 @@
 package com.example.treksathi.service;
 
 import com.example.treksathi.dto.events.EventResponseDTO;
+import com.example.treksathi.dto.pagination.PaginatedResponseDTO;
+import com.example.treksathi.enums.EventStatus;
 import com.example.treksathi.model.Event;
 import com.example.treksathi.model.Organizer;
 import com.example.treksathi.record.BookingResponseRecord;
@@ -10,6 +12,9 @@ import com.example.treksathi.repository.EventRepository;
 import com.example.treksathi.repository.EventRegistrationRepository;
 import com.example.treksathi.repository.ReviewRepository;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import java.util.List;
@@ -17,6 +22,7 @@ import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
+@Slf4j
 public class EventService {
 
     private final PaymentGatewayService paymentGatewayService;
@@ -26,11 +32,22 @@ public class EventService {
 
     // READ - Get all events
     @Transactional(readOnly = true)
-    public List<EventResponseDTO> getAllEvents() {
-        List<Event> events = eventRepository.findAll();
-        return events.stream()
-                .map(this::mapEntityToDto)
-                .collect(Collectors.toList());
+    public PaginatedResponseDTO<EventResponseDTO> getAllEvents(int page, int size) {
+        Page<Event> eventPage = eventRepository.findByStatus(
+                EventStatus.ACTIVE,
+                PageRequest.of(page, size)
+        );
+
+        log.info("Found {} active events on page {} of {}",
+                eventPage.getNumberOfElements(),
+                eventPage.getNumber() + 1,
+                eventPage.getTotalPages());
+
+        // Map entities to DTOs
+        Page<EventResponseDTO> dtoPage = eventPage.map(this::mapEntityToDto);
+
+        // Return paginated response
+        return PaginatedResponseDTO.of(dtoPage);
     }
 
     // READ - Get event by ID with organizer details
