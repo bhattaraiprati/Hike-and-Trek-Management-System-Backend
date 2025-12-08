@@ -54,7 +54,7 @@ public class Event {
     private List<String> requirements;
 
     @Enumerated(EnumType.STRING)
-    private EventStatus status = EventStatus.PENDING;
+    private EventStatus status = EventStatus.ACTIVE;
 
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;

@@ -1,8 +1,13 @@
 package com.example.treksathi.controller;
 
+import com.example.treksathi.enums.EventRegistrationStatus;
+import com.example.treksathi.enums.EventStatus;
+import com.example.treksathi.exception.EventNotFoundException;
 import com.example.treksathi.model.EventRegistration;
 import com.example.treksathi.record.BookingResponseRecord;
+import com.example.treksathi.record.EventCardResponse;
 import com.example.treksathi.record.EventRegistrationResponse;
+import com.example.treksathi.record.UpcommingEventRecord;
 import com.example.treksathi.service.EventRegistrationService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
@@ -28,18 +33,24 @@ public class EventRegistrationController {
 
     }
 
-
     @GetMapping("/events/{id}")
 
-    public ResponseEntity<List<BookingResponseRecord>> getALlEventOfUser(@PathVariable int id){
+    public ResponseEntity<List<BookingResponseRecord>> getALlEventOfUser(@PathVariable int id, @RequestParam String status){
 
-        List<BookingResponseRecord> eventRegistration = eventRegistrationService.getALlEventsByUserId(id);
+        List<EventRegistrationStatus> statuses;
+        if ("ALL".equalsIgnoreCase(status)) {
+            statuses = List.of(EventRegistrationStatus.SUCCESS, EventRegistrationStatus.CANCEL);
+        } else {
+            statuses = List.of(EventRegistrationStatus.valueOf(status));
+        }
+
+        List<BookingResponseRecord> eventRegistration = eventRegistrationService.getAllEventsByUserId(id, statuses );
         return ResponseEntity.ok(eventRegistration);
     }
 
     @GetMapping("/upcoming")
-    public ResponseEntity<?> getUpcomingEvents(@RequestParam int id){
-        List<BookingResponseRecord> eventList = eventRegistrationService.getAllUpcomingEvent(id);
+    public ResponseEntity<List<UpcommingEventRecord>> getUpcomingEvents(@RequestParam int id){
+        List<UpcommingEventRecord> eventList = eventRegistrationService.getAllUpcomingEvent(id);
 
         return ResponseEntity.ok(eventList);
 

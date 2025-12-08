@@ -46,7 +46,7 @@ public class OrganizerEventService {
         // Map DTO to Entity
         mapDtoToEntity(eventCreateDTO, event);
 
-        event.setStatus(EventStatus.PENDING);
+        event.setStatus(EventStatus.ACTIVE);
         event.setCreatedAt(LocalDateTime.now());
         event.setUpdatedAt(LocalDateTime.now());
 

@@ -1,8 +1,10 @@
 package com.example.treksathi.mapper;
 
+import com.example.treksathi.model.Event;
 import com.example.treksathi.model.EventParticipants;
 import com.example.treksathi.model.EventRegistration;
 import com.example.treksathi.model.Payments;
+import com.example.treksathi.record.EventCardResponse;
 import com.example.treksathi.record.EventRegistrationResponse;
 import org.springframework.stereotype.Component;
 
@@ -71,6 +73,7 @@ public class EventRegistrationMapper {
         );
 
     }
+
 
     private EventRegistrationResponse.ParticipantDetails mapParticipant(EventParticipants p) {
         String title = p.getGender() == com.example.treksathi.enums.Gender.MALE ? "Mr" : "Mrs";

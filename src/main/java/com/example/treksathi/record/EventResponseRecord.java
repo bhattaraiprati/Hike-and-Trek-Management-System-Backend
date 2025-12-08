@@ -23,5 +23,7 @@ public record EventResponseRecord(
         List<String> requirements,
         String status,
         OrganizerRecord organizer
+
 ) {
+
 }

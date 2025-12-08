@@ -1,15 +1,25 @@
 package com.example.treksathi.service;
 
 import com.example.treksathi.dto.events.EventResponseDTO;
+import com.example.treksathi.dto.pagination.PaginatedResponseDTO;
+import com.example.treksathi.enums.EventStatus;
+import com.example.treksathi.mapper.BookingResponseMapper;
+import com.example.treksathi.mapper.EventRegistrationMapper;
 import com.example.treksathi.model.Event;
+import com.example.treksathi.model.EventParticipants;
 import com.example.treksathi.model.Organizer;
 import com.example.treksathi.record.BookingResponseRecord;
+import com.example.treksathi.record.EventCardResponse;
 import com.example.treksathi.record.EventResponseRecord;
 import com.example.treksathi.record.OrganizerRecord;
+import com.example.treksathi.repository.EventParticipantsRepository;
 import com.example.treksathi.repository.EventRepository;
 import com.example.treksathi.repository.EventRegistrationRepository;
 import com.example.treksathi.repository.ReviewRepository;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import java.util.List;
@@ -17,20 +27,31 @@ import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
+@Slf4j
 public class EventService {
 
     private final PaymentGatewayService paymentGatewayService;
     private final EventRepository eventRepository;
     private final EventRegistrationRepository eventRegistrationRepository;
     private final ReviewRepository reviewRepository;
+    private final EventParticipantsRepository eventParticipantsRepository;
+    private final EventRegistrationMapper eventMapper;
+
 
     // READ - Get all events
     @Transactional(readOnly = true)
-    public List<EventResponseDTO> getAllEvents() {
-        List<Event> events = eventRepository.findAll();
-        return events.stream()
-                .map(this::mapEntityToDto)
-                .collect(Collectors.toList());
+    public PaginatedResponseDTO<EventCardResponse> getAllEvents(int page, int size) {
+        Page<EventCardResponse> eventPage = eventRepository.findEventCardsWithParticipantCount(
+                EventStatus.ACTIVE,
+                PageRequest.of(page, size)
+        );
+
+        log.info("Found {} active events on page {} of {}",
+                eventPage.getNumberOfElements(),
+                eventPage.getNumber() + 1,
+                eventPage.getTotalPages());
+
+        return PaginatedResponseDTO.of(eventPage);
     }
 
     // READ - Get event by ID with organizer details

@@ -1,6 +1,10 @@
 package com.example.treksathi.repository;
 
+import com.example.treksathi.enums.EventRegistrationStatus;
+import com.example.treksathi.enums.EventStatus;
 import com.example.treksathi.model.EventRegistration;
+import com.example.treksathi.record.EventCardResponse;
+import com.example.treksathi.record.UpcommingEventRecord;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
@@ -18,9 +22,24 @@ import java.util.Optional;
 
         Optional<List<EventRegistration>> findByUserId(int id);
 
-        @Query(" Select er From EventRegistration er"+
+        @Query("SELECT er FROM EventRegistration er " +
                 " join er.event e"+
-                " where er.user = :userId"+
-                " AND e.status = :status")
-        Optional<List<EventRegistration>> findActiveEventByUserId(@Param("userId") int userId, @Param("status") String status);
-    }
+                " WHERE er.user.id = :id AND er.status IN :status")
+        Optional<List<EventRegistration>> findByUserIdAndStatus(@Param("id") int id, @Param("status") List<EventRegistrationStatus> status);
+
+        // src/main/java/com/example/treksathi/repository/EventRegistrationRepository.java
+        @Query("SELECT new com.example.treksathi.record.UpcommingEventRecord(" +
+                "er.id, " +
+                "e.title, " +
+                "CAST(e.date AS string), " +
+                "e.location, " +
+                "e.organizer.organization_name, " +
+                "CAST(e.meetingTime AS string), " +
+                "SIZE(er.eventParticipants), " +
+                "CAST(e.status AS string), " +
+                "e.bannerImageUrl) " +
+                "FROM EventRegistration er " +
+                "JOIN er.event e " +
+                "WHERE er.user.id = :userId AND e.status = :status")
+        Optional<List<UpcommingEventRecord>> findActiveEventByUserId(@Param("userId") int userId, @Param("status") EventStatus status);
+     }
