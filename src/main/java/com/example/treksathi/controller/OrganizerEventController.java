@@ -2,6 +2,7 @@ package com.example.treksathi.controller;
 
 import com.example.treksathi.dto.events.EventCreateDTO;
 import com.example.treksathi.dto.events.EventResponseDTO;
+import com.example.treksathi.record.EventDetailsOrganizerRecord;
 import com.example.treksathi.service.OrganizerEventService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -33,6 +34,13 @@ public class OrganizerEventController {
     public ResponseEntity<List<EventResponseDTO>> getEventsByOrganizer(@PathVariable int organizerId,
                                                                        @AuthenticationPrincipal UserDetails userDetails) {
         List<EventResponseDTO> events = organizerEventService.getEventsByOrganizer(organizerId, userDetails);
+        return ResponseEntity.ok(events);
+    }
+
+    @GetMapping("/g/{eventId}")
+    public ResponseEntity<EventDetailsOrganizerRecord> getAllEventsDetailsByEventId( @PathVariable int eventId,
+                                                                                         @AuthenticationPrincipal UserDetails userDetails) {
+        EventDetailsOrganizerRecord events = organizerEventService.getAllEventsDetails(eventId, userDetails);
         return ResponseEntity.ok(events);
     }
 

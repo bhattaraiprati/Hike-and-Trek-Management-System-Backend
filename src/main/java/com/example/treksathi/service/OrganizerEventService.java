@@ -5,9 +5,11 @@ import com.example.treksathi.dto.events.EventResponseDTO;
 import com.example.treksathi.enums.DifficultyLevel;
 import com.example.treksathi.enums.EventStatus;
 import com.example.treksathi.exception.UnauthorizedException;
+import com.example.treksathi.mapper.EventResponseMapper;
 import com.example.treksathi.model.Event;
 import com.example.treksathi.model.Organizer;
 import com.example.treksathi.model.User;
+import com.example.treksathi.record.EventDetailsOrganizerRecord;
 import com.example.treksathi.repository.EventRepository;
 import com.example.treksathi.repository.OrganizerRepository;
 import com.example.treksathi.repository.UserRepository;
@@ -30,6 +32,7 @@ public class OrganizerEventService {
     private final EventRepository eventRepository;
     private final UserRepository userRepository;
     private final OrganizerRepository organizerRepository;
+    private final EventResponseMapper eventResponseMapper;
     private final DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
 
 
@@ -69,6 +72,28 @@ public class OrganizerEventService {
         return events.stream()
                 .map(this::mapEntityToDto)
                 .collect(Collectors.toList());
+    }
+
+    public EventDetailsOrganizerRecord getAllEventsDetails(int eventId, UserDetails userDetails) {
+        String authenticatedUsername = userDetails.getUsername();
+        User user = userRepository.findByEmail(authenticatedUsername)
+                .orElseThrow(() -> new RuntimeException("User not found with email: " + authenticatedUsername));
+
+        Organizer organizer = organizerRepository.findByUser(user);
+        if (organizer == null) {
+            throw new RuntimeException("Organizer not found for user: " + authenticatedUsername);
+        }
+
+        Event event = eventRepository.findById(eventId)
+                .orElseThrow(() -> new RuntimeException("Event not found with id: " + eventId));
+
+        // Verify that this organizer owns this event (security check)
+        if (event.getOrganizer().getId() != organizer.getId()) {
+            throw new RuntimeException("Unauthorized: You are not the organizer of this event");
+        }
+
+        // Map the event to the record (this includes all registrations)
+        return eventResponseMapper.toEventDetailsOrganizerRecord(event);
     }
 
     //     READ - Get events by status (PENDING, APPROVED, REJECTED, CANCELLED, COMPLETED)

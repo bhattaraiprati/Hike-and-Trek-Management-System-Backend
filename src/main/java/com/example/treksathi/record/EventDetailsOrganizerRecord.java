@@ -24,8 +24,8 @@ public record EventDetailsOrganizerRecord(
         List<String> requirements,
         String status,
         LocalDateTime createdAt,
-        LocalDateTime updatedAt,
-        EventRegistrationInfo eventRegistration
+
+        List<EventRegistrationInfo> eventRegistration
 
 ) {
     public record EventRegistrationInfo(
@@ -35,7 +35,8 @@ public record EventDetailsOrganizerRecord(
             String contactName,
             String email,
             String status,
-            PaymentInfo payments
+            PaymentInfo payments,
+            List<ParticipantInfo> eventParticipants
 
     ){ }
 
@@ -45,7 +46,16 @@ public record EventDetailsOrganizerRecord(
             String method,
             String paymentStatus,
             LocalDateTime transactionDate
-            // remainnging fields can be added as needed
 
     ){}
+
+    public record  ParticipantInfo(
+            int id,
+            String name,
+            String gender,
+            String nationality,
+            String attendanceStatus
+    ){
+
+    }
 }
