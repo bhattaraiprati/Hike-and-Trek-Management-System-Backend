@@ -1,18 +1,14 @@
 package com.example.treksathi.controller;
 
 import com.example.treksathi.enums.EventRegistrationStatus;
-import com.example.treksathi.enums.EventStatus;
-import com.example.treksathi.exception.EventNotFoundException;
-import com.example.treksathi.model.EventRegistration;
+
 import com.example.treksathi.record.BookingResponseRecord;
-import com.example.treksathi.record.EventCardResponse;
 import com.example.treksathi.record.EventRegistrationResponse;
 import com.example.treksathi.record.UpcommingEventRecord;
 import com.example.treksathi.service.EventRegistrationService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
-import org.springframework.security.core.annotation.AuthenticationPrincipal;
-import org.springframework.security.core.userdetails.UserDetails;
+
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;

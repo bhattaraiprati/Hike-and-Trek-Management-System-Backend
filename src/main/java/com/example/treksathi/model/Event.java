@@ -73,4 +73,5 @@ public class Event {
     public void onUpdate() {
         this.updatedAt = LocalDateTime.now();
     }
+
 }
