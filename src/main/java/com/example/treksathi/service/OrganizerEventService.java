@@ -2,6 +2,7 @@ package com.example.treksathi.service;
 
 import com.example.treksathi.dto.events.EventCreateDTO;
 import com.example.treksathi.dto.events.EventResponseDTO;
+import com.example.treksathi.dto.events.ParticipantsAttendanceDTO;
 import com.example.treksathi.enums.DifficultyLevel;
 import com.example.treksathi.enums.EventStatus;
 import com.example.treksathi.exception.UnauthorizedException;
@@ -96,6 +97,25 @@ public class OrganizerEventService {
         return eventResponseMapper.toEventDetailsOrganizerRecord(event);
     }
 
+
+    public void markAttendance(int eventId, List<ParticipantsAttendanceDTO> attendanceList) {
+        Event event = eventRepository.findById(eventId)
+                .orElseThrow(() -> new RuntimeException("Event not found with id: " + eventId));
+
+        // Iterate through the attendance list and update each participant's attendance status
+        for (ParticipantsAttendanceDTO attendanceDTO : attendanceList) {
+            var participant = event.getEventRegistration().stream()
+                    .flatMap(reg -> reg.getEventParticipants().stream())
+                    .filter(p -> p.getId() == attendanceDTO.getParticipantId())
+                    .findFirst()
+                    .orElseThrow(() -> new RuntimeException("Participant not found with id: " + attendanceDTO.getParticipantId()));
+
+            participant.setAttendanceStatus(attendanceDTO.getAttendanceStatus());
+        }
+
+        // Save the updated event (which cascades to participants)
+        eventRepository.save(event);
+    }
     //     READ - Get events by status (PENDING, APPROVED, REJECTED, CANCELLED, COMPLETED)
     @Transactional(readOnly = true)
     public List<EventResponseDTO> getEventsByStatus(String status) {
@@ -116,8 +136,6 @@ public class OrganizerEventService {
     public EventResponseDTO updateEvent(int id, EventCreateDTO eventCreateDTO) {
         Event event = eventRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("Event not found with id: " + id));
-
-
         User user = getAuthenticatedOrganizer();
         Organizer authenticatedOrganizer = organizerRepository.findByUser(user);
 
