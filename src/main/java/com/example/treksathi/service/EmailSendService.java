@@ -39,6 +39,24 @@ public class EmailSendService {
         }
     }
 
+    @Async("taskExecutor")
+    public CompletableFuture<Boolean> sendBulkEmailAsync(List<String> recipients, String subject, String text) {
+        try {
+            SimpleMailMessage message = new SimpleMailMessage();
+            message.setBcc(recipients.toArray(new String[0])); // Use BCC to hide recipients from each other
+            message.setSubject(subject);
+            message.setText(text);
+            message.setFrom("bhattaraipratik44@gmail.com");
+
+            javaMailSender.send(message);
+            log.info("Bulk email sent successfully to {} recipients", recipients.size());
+            return CompletableFuture.completedFuture(true);
+        } catch (Exception e) {
+            log.error("Failed to send bulk email. Error: {}", e.getMessage());
+            return CompletableFuture.completedFuture(false);
+        }
+    }
+
     public void sendEmailWithAttachment(String to, String subject, String text, File attachment) throws MessagingException {
         MimeMessage message = javaMailSender.createMimeMessage();
         MimeMessageHelper helper = new MimeMessageHelper(message, true);

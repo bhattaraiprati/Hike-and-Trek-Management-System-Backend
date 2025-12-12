@@ -1,13 +1,12 @@
 package com.example.treksathi.service;
 
-import com.example.treksathi.dto.events.EventCreateDTO;
-import com.example.treksathi.dto.events.EventResponseDTO;
-import com.example.treksathi.dto.events.ParticipantsAttendanceDTO;
+import com.example.treksathi.dto.events.*;
 import com.example.treksathi.enums.DifficultyLevel;
 import com.example.treksathi.enums.EventStatus;
 import com.example.treksathi.exception.UnauthorizedException;
 import com.example.treksathi.mapper.EventResponseMapper;
 import com.example.treksathi.model.Event;
+import com.example.treksathi.model.EventRegistration;
 import com.example.treksathi.model.Organizer;
 import com.example.treksathi.model.User;
 import com.example.treksathi.record.EventDetailsOrganizerRecord;
@@ -34,6 +33,7 @@ public class OrganizerEventService {
     private final UserRepository userRepository;
     private final OrganizerRepository organizerRepository;
     private final EventResponseMapper eventResponseMapper;
+    private final EmailSendService emailSendService;
     private final DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
 
 
@@ -168,6 +168,46 @@ public class OrganizerEventService {
         } catch (IllegalArgumentException e) {
             throw new RuntimeException("Invalid status: " + status + ". Valid statuses are: PENDING, APPROVED, REJECTED, CANCELLED, COMPLETED");
         }
+    }
+
+    public BulkEmailResponse bulkEmailToParticipants(int eventId, EmailAttachmentRequest emailAttachmentRequest) {
+        Event event = eventRepository.findById(eventId)
+                .orElseThrow(() -> new RuntimeException("Event not found with id: " + eventId));
+
+        List<String> registeredEmails = event.getEventRegistration().stream()
+                .map(EventRegistration::getEmail)
+                .filter(email -> email != null && !email.isEmpty())
+                .distinct()
+                .toList();
+
+        List<String> requestedRecipients = emailAttachmentRequest.getRecipients();
+
+        List<String> validRecipients = requestedRecipients.stream()
+                .filter(registeredEmails::contains)
+                .distinct()
+                .toList();
+
+        List<String> invalidRecipients = requestedRecipients.stream()
+                .filter(email -> !registeredEmails.contains(email))
+                .toList();
+
+        if (validRecipients.isEmpty()) {
+            throw new RuntimeException("No valid recipients found. All provided emails are not registered for this event.");
+        }
+
+        emailSendService.sendBulkEmailAsync(
+                validRecipients,
+                emailAttachmentRequest.getSubject(),
+                emailAttachmentRequest.getText()
+        );
+
+        return new BulkEmailResponse(
+                requestedRecipients.size(),
+                validRecipients.size(),
+                invalidRecipients.size(),
+                invalidRecipients,
+                "Bulk email sent successfully to " + validRecipients.size() + " recipients"
+        );
     }
 
     //     DELETE - Delete an event

@@ -1,9 +1,6 @@
 package com.example.treksathi.controller;
 
-import com.example.treksathi.dto.events.EventCreateDTO;
-import com.example.treksathi.dto.events.EventRegisterDTO;
-import com.example.treksathi.dto.events.EventResponseDTO;
-import com.example.treksathi.dto.events.ParticipantsAttendanceDTO;
+import com.example.treksathi.dto.events.*;
 import com.example.treksathi.record.EventDetailsOrganizerRecord;
 import com.example.treksathi.service.OrganizerEventService;
 import jakarta.validation.Valid;
@@ -58,6 +55,13 @@ public class OrganizerEventController {
     public ResponseEntity<List<EventResponseDTO>> getEventsByStatus(@PathVariable String status) {
         List<EventResponseDTO> events = organizerEventService.getEventsByStatus(status);
         return ResponseEntity.ok(events);
+    }
+
+    @PostMapping("/sendBulkEmail/{eventId}")
+    public ResponseEntity<?> sendBulkEmail(@PathVariable int eventId,
+                                           @RequestBody EmailAttachmentRequest emailAttachmentRequest) {
+        BulkEmailResponse response = organizerEventService.bulkEmailToParticipants(eventId, emailAttachmentRequest);
+        return ResponseEntity.ok(response);
     }
 
     // update the event by the ID
