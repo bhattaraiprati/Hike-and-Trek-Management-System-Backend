@@ -1,7 +1,6 @@
 package com.example.treksathi.controller;
 
-import com.example.treksathi.dto.events.EventCreateDTO;
-import com.example.treksathi.dto.events.EventResponseDTO;
+import com.example.treksathi.dto.events.*;
 import com.example.treksathi.record.EventDetailsOrganizerRecord;
 import com.example.treksathi.service.OrganizerEventService;
 import jakarta.validation.Valid;
@@ -37,11 +36,18 @@ public class OrganizerEventController {
         return ResponseEntity.ok(events);
     }
 
-    @GetMapping("/g/{eventId}")
+    @GetMapping("/allEventsDetails/{eventId}")
     public ResponseEntity<EventDetailsOrganizerRecord> getAllEventsDetailsByEventId( @PathVariable int eventId,
                                                                                          @AuthenticationPrincipal UserDetails userDetails) {
         EventDetailsOrganizerRecord events = organizerEventService.getAllEventsDetails(eventId, userDetails);
         return ResponseEntity.ok(events);
+    }
+
+    @PostMapping("makeAttendance/{eventId}")
+    public ResponseEntity<String> makeAttendance(@PathVariable int eventId, @RequestBody List<ParticipantsAttendanceDTO> attendance
+                                                 ) {
+        organizerEventService.markAttendance(eventId, attendance);
+        return ResponseEntity.ok("Attendance marked successfully");
     }
 
     // Get the event by the Status
@@ -49,6 +55,13 @@ public class OrganizerEventController {
     public ResponseEntity<List<EventResponseDTO>> getEventsByStatus(@PathVariable String status) {
         List<EventResponseDTO> events = organizerEventService.getEventsByStatus(status);
         return ResponseEntity.ok(events);
+    }
+
+    @PostMapping("/sendBulkEmail/{eventId}")
+    public ResponseEntity<?> sendBulkEmail(@PathVariable int eventId,
+                                           @RequestBody EmailAttachmentRequest emailAttachmentRequest) {
+        BulkEmailResponse response = organizerEventService.bulkEmailToParticipants(eventId, emailAttachmentRequest);
+        return ResponseEntity.ok(response);
     }
 
     // update the event by the ID
@@ -62,7 +75,7 @@ public class OrganizerEventController {
 
     // update the event based on the status
     // can be used by the organizer and the admin
-    @PatchMapping("/{id}/status")
+    @PatchMapping("/statusChange/{id}")
     public ResponseEntity<EventResponseDTO> updateEventStatus(
             @PathVariable int id,
             @RequestParam String status) {

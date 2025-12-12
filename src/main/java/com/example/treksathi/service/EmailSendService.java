@@ -11,6 +11,7 @@ import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 
 import java.io.File;
+import java.util.List;
 import java.util.concurrent.CompletableFuture;
 
 @Service
@@ -34,6 +35,24 @@ public class EmailSendService {
             return CompletableFuture.completedFuture(true);
         } catch (Exception e) {
             log.error("Failed to send email to: {}, Error: {}", to, e.getMessage());
+            return CompletableFuture.completedFuture(false);
+        }
+    }
+
+    @Async("taskExecutor")
+    public CompletableFuture<Boolean> sendBulkEmailAsync(List<String> recipients, String subject, String text) {
+        try {
+            SimpleMailMessage message = new SimpleMailMessage();
+            message.setBcc(recipients.toArray(new String[0])); // Use BCC to hide recipients from each other
+            message.setSubject(subject);
+            message.setText(text);
+            message.setFrom("bhattaraipratik44@gmail.com");
+
+            javaMailSender.send(message);
+            log.info("Bulk email sent successfully to {} recipients", recipients.size());
+            return CompletableFuture.completedFuture(true);
+        } catch (Exception e) {
+            log.error("Failed to send bulk email. Error: {}", e.getMessage());
             return CompletableFuture.completedFuture(false);
         }
     }
