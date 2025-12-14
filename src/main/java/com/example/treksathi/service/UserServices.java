@@ -85,6 +85,7 @@ public class UserServices {
 
 //    public
 
+    @Transactional
     public LoginResponseDTO verify(UserCreateDTO userCreateDTO) {
         try {
 
@@ -112,6 +113,9 @@ public class UserServices {
             Authentication auth = authenticationManager.authenticate(authToken);
 
             if (auth.isAuthenticated()) {
+                // Delete any existing refresh token before creating a new one
+                refreshTokenService.findTokenByUser(user);
+
                 RefreshToken refreshToken = refreshTokenService.createRefreshToken(user.getEmail());
 
                 String token = jwtService.generateToken(

@@ -52,6 +52,7 @@ public class EventResponseMapper {
 
 
 
+
         return new EventDetailsOrganizerRecord(
                 event.getId(),
                 event.getTitle(),
@@ -67,8 +68,8 @@ public class EventResponseMapper {
                 event.getMeetingTime(),
                 organizer.getContact_person(),
                 organizer.getUser().getEmail(),
-                List.of(event.getIncludedServices().toString()),
-                List.of(event.getRequirements().toString()),
+                event.getIncludedServices(),
+                event.getRequirements(),
                 event.getStatus().name(),
                 event.getCreatedAt(),
                 eventRegistrations
