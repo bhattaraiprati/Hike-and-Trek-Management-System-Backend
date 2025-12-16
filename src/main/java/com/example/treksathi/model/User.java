@@ -7,6 +7,7 @@ import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.Setter;
 
+import java.util.ArrayList;
 import java.util.List;
 
 @Getter
@@ -36,6 +37,9 @@ public class User {
     @Column(nullable = false)
 
     private Role role = Role.HIKER;
+
+    @ManyToMany(mappedBy = "participants")
+    private List<ChatRoom> chatRooms = new ArrayList<>();
 
     @Enumerated(EnumType.STRING)
     private AccountStatus status = AccountStatus.INACTIVE;

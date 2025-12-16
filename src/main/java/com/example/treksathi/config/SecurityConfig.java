@@ -65,12 +65,17 @@ public class SecurityConfig {
                         .requestMatchers( "/auth/**", "/event/registration/success", "/event/registration/failure").permitAll()
                         .requestMatchers("/api/oauth2/**", "/oauth2/**", "/login/oauth2/**", "/oauth2/authorization/**").permitAll()
 
+                        .requestMatchers("/ws/**").permitAll()
+                        .requestMatchers("/ws/info/**").permitAll()  // Especially this one
+                        .requestMatchers("/api/ws/**").permitAll()
+                        .requestMatchers("/api/ws/info/**").permitAll()
+
                         .requestMatchers("/admin/**").hasRole("ADMIN")
                         .requestMatchers("/organizer/**").hasRole("ORGANIZER")
                         .requestMatchers("/hiker/**").hasRole("HIKER")
 
                         // Multiple roles allowed
-                        .requestMatchers("/event/**").hasAnyRole("ADMIN", "ORGANIZER", "HIKER")
+                        .requestMatchers("/event/**", "/chat/**").hasAnyRole("ADMIN", "ORGANIZER", "HIKER")
 
                         .anyRequest().authenticated())
                 .addFilterBefore(jwtAuthFilter, UsernamePasswordAuthenticationFilter.class)
@@ -83,9 +88,8 @@ public class SecurityConfig {
                 .formLogin(form -> form.disable())
                 .httpBasic(basic -> basic.disable())
                 .exceptionHandling(ex -> ex
-                        .defaultAuthenticationEntryPointFor(
-                                new HttpStatusEntryPoint(HttpStatus.UNAUTHORIZED),
-                                request -> request.getRequestURI().startsWith("/api/")
+                        .authenticationEntryPoint(
+                                new HttpStatusEntryPoint(HttpStatus.UNAUTHORIZED)
                         )
                 )
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS));

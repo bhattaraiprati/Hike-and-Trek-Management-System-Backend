@@ -3,6 +3,7 @@ package com.example.treksathi.service;
 import com.example.treksathi.exception.UsernameNotFoundException;
 import com.example.treksathi.model.RefreshToken;
 import com.example.treksathi.model.User;
+import com.example.treksathi.record.BookingResponseRecord;
 import com.example.treksathi.repository.RefreshTokenRepository;
 import com.example.treksathi.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
@@ -30,6 +31,15 @@ public class RefreshTokenService {
         return  refreshTokenRepository.save(refreshToken);
     }
 
+    public void findTokenByUser(User user) {
+        Optional<RefreshToken> refreshToken = refreshTokenRepository.findByUser(user);
+        if (refreshToken.isPresent()) {
+            refreshTokenRepository.delete(refreshToken.get());
+            // Force immediate flush and commit of the delete
+            refreshTokenRepository.flush();  // Ensures DELETE SQL is sent now
+        }
+    }
+
     public Optional<RefreshToken> findByToken(String token){
         return  refreshTokenRepository.findByToken(token);
     }
@@ -40,6 +50,10 @@ public class RefreshTokenService {
             throw  new RuntimeException(token.getToken() + " Refresh token is expired. Please make a new login..!");
         }
         return token;
+    }
+
+    public void deleteAllRefreshTokensForUser(User user) {
+        refreshTokenRepository.findByUser(user).ifPresent(refreshTokenRepository::delete);
     }
 
     public boolean deleteRefreshToken(User user){

@@ -59,6 +59,9 @@ public class Event {
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
 
+    @OneToOne(mappedBy = "event", cascade = CascadeType.ALL)
+    private ChatRoom chatRoom;
+
     @OneToMany(mappedBy = "event", cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.LAZY)
     private List<EventRegistration> eventRegistration;
 

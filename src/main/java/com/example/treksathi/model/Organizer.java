@@ -6,6 +6,7 @@ import lombok.Getter;
 import lombok.Setter;
 
 import java.time.LocalDateTime;
+import java.util.ArrayList;
 import java.util.List;
 
 @Entity
@@ -33,6 +34,8 @@ public class Organizer {
     @ManyToOne
     @JoinColumn(name = "verified_by")
     private User verified_by;
+    @OneToMany(mappedBy = "organizer", cascade = CascadeType.ALL)
+    private List<ChatRoom> chatRooms = new ArrayList<>();
     private LocalDateTime verified_on;
     private LocalDateTime createdAt;
 
