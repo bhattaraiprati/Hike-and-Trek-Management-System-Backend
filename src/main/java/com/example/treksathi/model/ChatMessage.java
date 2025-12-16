@@ -4,10 +4,12 @@ import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 
+import io.hypersistence.utils.hibernate.type.json.JsonType;
 import jakarta.persistence.*;
 
 import lombok.Getter;
 import lombok.Setter;
+import org.hibernate.annotations.Type;
 
 @Getter
 @Setter
@@ -27,6 +29,7 @@ public class ChatMessage {
     private User sender;
 
     // NoSQL-like: JSONB for flexible content (text, multimedia)
+    @Type(JsonType.class)
     @Column(columnDefinition = "jsonb")
     private String content;  // e.g., {"type": "text", "text": "Hello"} or {"type": "image", "url": "...", "metadata": {}}
 
