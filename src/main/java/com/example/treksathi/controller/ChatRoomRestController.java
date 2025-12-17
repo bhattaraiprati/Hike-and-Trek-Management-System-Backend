@@ -28,6 +28,14 @@ public class ChatRoomRestController {
         return ResponseEntity.ok(chatRoomService.createChatRoom(eventId, name, auth.getName()));
     }
 
+    @PostMapping("/rooms/create/participant/{eventId}")
+    public ResponseEntity<?> EnroleParticipantsForEventChat(
+            @PathVariable int eventId,
+            Authentication auth) {
+        ChatRoomDTO chatRoomDTO = chatRoomService.registerParticipantsForEventChat(eventId, auth.getName());
+        return ResponseEntity.status(HttpStatus.CREATED).body(chatRoomDTO);
+    }
+
 //    @GetMapping("/rooms/{eventId}")
 //    public ResponseEntity<String> getOrganizerChatRooms(
 //            @PathVariable int eventId) {

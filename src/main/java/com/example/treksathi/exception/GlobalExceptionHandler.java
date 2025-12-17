@@ -65,4 +65,13 @@ public class GlobalExceptionHandler {
         body.put("message", ex.getMessage());
         return new ResponseEntity<>(body, HttpStatus.NOT_FOUND);
     }
+
+    @ExceptionHandler(ChatRoomNotFoundException.class)
+    public ResponseEntity<Map<String, Object>> handleChatRoomNotFoundException(ChatRoomNotFoundException ex){
+        Map<String, Object> body = new HashMap<>();
+        body.put("Status", HttpStatus.NOT_FOUND.value());
+        body.put("error", "Chat Room Not Found");
+        body.put("message", ex.getMessage());
+        return new ResponseEntity<>(body, HttpStatus.NOT_FOUND);
+    }
 }

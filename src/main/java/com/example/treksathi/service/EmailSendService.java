@@ -46,6 +46,7 @@ public class EmailSendService {
             message.setBcc(recipients.toArray(new String[0])); // Use BCC to hide recipients from each other
             message.setSubject(subject);
             message.setText(text);
+            //get from properties
             message.setFrom("bhattaraipratik44@gmail.com");
 
             javaMailSender.send(message);
@@ -64,6 +65,7 @@ public class EmailSendService {
         helper.setTo(to);
         helper.setSubject(subject);
         helper.setText(text);
+        //
         helper.setFrom("bhattaraipratik44@gmail.com");
 
         if (attachment != null && attachment.exists()) {

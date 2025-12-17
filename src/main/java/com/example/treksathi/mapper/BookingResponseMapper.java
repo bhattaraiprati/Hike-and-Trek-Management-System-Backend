@@ -15,10 +15,6 @@
         public BookingResponseRecord toResponse(EventRegistration reg) {
 
             Payments payments = reg.getPayments();
-            if (payments == null) {
-                throw new IllegalStateException("Payment information is missing");
-            }
-
             var event = reg.getEvent();
             var organizer = event.getOrganizer();
 
@@ -44,10 +40,16 @@
             var participantDetails = new BookingResponseRecord.ParticipantDetails(totalParticipants);
 
             // Payment Details
-            var paymentDetails = new BookingResponseRecord.PaymentDetails(
+            var paymentDetails = (payments != null)
+                    ? new BookingResponseRecord.PaymentDetails(
                     payments.getMethod().name().toLowerCase(),
                     payments.getAmount(),
                     payments.getPaymentStatus().name().toLowerCase()
+            )
+                    : new BookingResponseRecord.PaymentDetails(
+                    "pending",
+                    0.0,
+                    "unpaid"
             );
 
             return new BookingResponseRecord(

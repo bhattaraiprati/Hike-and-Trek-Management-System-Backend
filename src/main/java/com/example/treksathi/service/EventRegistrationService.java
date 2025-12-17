@@ -9,12 +9,14 @@ import com.example.treksathi.model.EventRegistration;
 import com.example.treksathi.record.*;
 import com.example.treksathi.repository.EventRegistrationRepository;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
 
 @Service
 @RequiredArgsConstructor
+@Slf4j
 public class EventRegistrationService {
 
     private  final EventRegistrationRepository eventRegistrationRepository;
@@ -29,8 +31,8 @@ public class EventRegistrationService {
     }
 
     public List<BookingResponseRecord> getAllEventsByUserId(int id, List<EventRegistrationStatus> status){
-        List<EventRegistration> reg = eventRegistrationRepository.findByUserIdAndStatus(id, status).orElseThrow(null);
-
+        List<EventRegistration> reg = eventRegistrationRepository.findByUserIdAndStatusWithPayments(id, status).orElseThrow(null);
+//        log.info("payments Details", reg.getPayments());
         return reg.stream()
                 .map(bookingMapper::toResponse)
                 .toList();

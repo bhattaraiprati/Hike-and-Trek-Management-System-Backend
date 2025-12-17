@@ -3,6 +3,7 @@ package com.example.treksathi.repository;
 import com.example.treksathi.enums.EventRegistrationStatus;
 import com.example.treksathi.enums.EventStatus;
 import com.example.treksathi.model.EventRegistration;
+import com.example.treksathi.model.User;
 import com.example.treksathi.record.EventCardResponse;
 import com.example.treksathi.record.UpcommingEventRecord;
 import org.springframework.data.jpa.repository.JpaRepository;
@@ -20,13 +21,19 @@ import java.util.Optional;
                 "WHERE e.organizer.id = :organizerId")
         int sumParticipantsByOrganizerId(@Param("organizerId") int organizerId);
 
+        EventRegistration findByUser(User user);
+
         Optional<List<EventRegistration>> findByUserId(int id);
 
         @Query("SELECT er FROM EventRegistration er " +
-                " join er.event e"+
-                " WHERE er.user.id = :id AND er.status IN :status")
-        Optional<List<EventRegistration>> findByUserIdAndStatus(@Param("id") int id, @Param("status") List<EventRegistrationStatus> status);
-
+                "LEFT JOIN FETCH er.payments " +
+                "LEFT JOIN FETCH er.event e " +
+                "LEFT JOIN FETCH e.organizer " +
+                "WHERE er.user.id = :userId AND er.status IN :statuses")
+        Optional<List<EventRegistration>> findByUserIdAndStatusWithPayments(
+                @Param("userId") int userId,
+                @Param("statuses") List<EventRegistrationStatus> statuses
+        );
         // src/main/java/com/example/treksathi/repository/EventRegistrationRepository.java
         @Query("SELECT new com.example.treksathi.record.UpcommingEventRecord(" +
                 "er.id, " +
