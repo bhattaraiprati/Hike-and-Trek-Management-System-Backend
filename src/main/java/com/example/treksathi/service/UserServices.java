@@ -1,5 +1,9 @@
 package com.example.treksathi.service;
 
+import com.example.treksathi.Interfaces.IEmailSendService;
+import com.example.treksathi.Interfaces.IOTPUtil;
+import com.example.treksathi.Interfaces.IRefreshTokenService;
+import com.example.treksathi.Interfaces.IUserServices;
 import com.example.treksathi.config.JWTService;
 import com.example.treksathi.dto.user.LoginResponseDTO;
 import com.example.treksathi.dto.user.UploadIImageDTO;
@@ -19,6 +23,7 @@ import com.example.treksathi.model.User;
 import com.example.treksathi.repository.OTPRepository;
 import com.example.treksathi.repository.OrganizerRepository;
 import com.example.treksathi.repository.UserRepository;
+import com.example.treksathi.util.OTPUtil;
 import jakarta.servlet.http.HttpServletRequest;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -42,16 +47,17 @@ import java.util.Optional;
 @Transactional
 @RequiredArgsConstructor
 @Slf4j
-public class UserServices {
+public class UserServices implements IUserServices {
 
     private final UserRepository userRepository;
     private final PasswordEncoder passwordEncoder;
     private final AuthenticationManager authenticationManager;
     private final OTPRepository otpRepository;
-    private final EmailSendService emailSendService;
+    private final IEmailSendService emailSendService;
     private final OrganizerRepository organizerRepository;
     private final JWTService jwtService;
-    private final RefreshTokenService refreshTokenService;
+    private final IOTPUtil otpUtil;
+    private final IRefreshTokenService refreshTokenService;
     private final InMemoryTokenBlacklist inMemoryTokenBlacklist;
 
 
@@ -161,7 +167,7 @@ public class UserServices {
         otpRepository.findByUser(user).ifPresent(otpRepository::delete);
 
         // Generate and save new OTP
-        int otpValue = OTPUtil.generateOtp();
+        int otpValue = otpUtil.generateOtp();
         OTP otp = new OTP();
         otp.setUser(user);
         otp.setOtp(otpValue);

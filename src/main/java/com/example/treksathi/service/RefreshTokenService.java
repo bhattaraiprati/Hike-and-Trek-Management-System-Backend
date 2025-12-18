@@ -1,5 +1,7 @@
 package com.example.treksathi.service;
 
+import com.example.treksathi.Interfaces.IRefreshTokenService;
+import com.example.treksathi.exception.InternalServerErrorException;
 import com.example.treksathi.exception.UsernameNotFoundException;
 import com.example.treksathi.model.RefreshToken;
 import com.example.treksathi.model.User;
@@ -15,7 +17,7 @@ import java.util.UUID;
 
 @Service
 @RequiredArgsConstructor
-public class RefreshTokenService {
+public class RefreshTokenService implements IRefreshTokenService {
 
     private final RefreshTokenRepository refreshTokenRepository;
 
@@ -47,7 +49,7 @@ public class RefreshTokenService {
     public RefreshToken verifyExpiration(RefreshToken token){
         if(token.getExpiryDate().isBefore(LocalDateTime.now())){
             refreshTokenRepository.delete(token);
-            throw  new RuntimeException(token.getToken() + " Refresh token is expired. Please make a new login..!");
+            throw  new InternalServerErrorException(token.getToken() + " Refresh token is expired. Please make a new login..!");
         }
         return token;
     }

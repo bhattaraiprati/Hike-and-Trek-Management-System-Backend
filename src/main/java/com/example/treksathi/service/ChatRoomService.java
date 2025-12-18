@@ -1,9 +1,9 @@
 package com.example.treksathi.service;
 
+import com.example.treksathi.Interfaces.IChatRoomService;
 import com.example.treksathi.enums.ChatRoomType;
 import com.example.treksathi.enums.Role;
-import com.example.treksathi.exception.ChatRoomNotFoundException;
-import com.example.treksathi.exception.UnauthorizedException;
+import com.example.treksathi.exception.*;
 import com.example.treksathi.model.*;
 import com.example.treksathi.record.chat.ChatOutputDTO;
 import com.example.treksathi.record.chat.ChatRoomDTO;
@@ -25,7 +25,7 @@ import java.util.stream.Collectors;
 @RequiredArgsConstructor
 @Transactional
 @Slf4j
-public class ChatRoomService {
+public class ChatRoomService  implements IChatRoomService {
 
     private final ChatRoomRepository chatRoomRepository;
     private final ChatMessageRepository chatMessageRepository;
@@ -118,17 +118,17 @@ public class ChatRoomService {
 
     private User getUserByEmail(String email) {
         return userRepository.findByEmail(email)
-                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "User not found"));
+                .orElseThrow(() -> new UsernameNotFoundException("User not found"));
     }
 
     private Event getEventById(int eventId) {
         return eventRepository.findById(eventId)
-                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Event not found"));
+                .orElseThrow(() -> new EventNotFoundException("Event not found"));
     }
 
     private ChatRoom getChatRoomById(Long roomId) {
         return chatRoomRepository.findById(roomId)
-                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Chat room not found"));
+                .orElseThrow(() -> new NotFoundException("Chat room not found"));
     }
 
     private void validateOrganizerRole(User user) {

@@ -1,5 +1,7 @@
 package com.example.treksathi.service;
 
+import com.example.treksathi.Interfaces.IOrganizerService;
+import com.example.treksathi.Interfaces.IUserServices;
 import com.example.treksathi.dto.organizer.OrganizerRegistrationDTO;
 import com.example.treksathi.enums.AccountStatus;
 import com.example.treksathi.enums.Approval_status;
@@ -21,11 +23,11 @@ import org.springframework.transaction.annotation.Transactional;
 @Service
 @RequiredArgsConstructor
 @Slf4j
-public class OrganizerService {
+public class OrganizerService implements IOrganizerService {
 
     private final UserRepository userRepository;
     private final OrganizerRepository organizerRepository;
-    private final UserServices userServicesl;
+    private final IUserServices userServicesl;
     private final PasswordEncoder passwordEncoder;
 
 

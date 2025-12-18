@@ -1,9 +1,11 @@
 package com.example.treksathi.service;
 
+import com.example.treksathi.Interfaces.IEmailSendService;
 import jakarta.mail.MessagingException;
 import jakarta.mail.internet.MimeMessage;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.mail.SimpleMailMessage;
 import org.springframework.mail.javamail.JavaMailSender;
 import org.springframework.mail.javamail.MimeMessageHelper;
@@ -17,9 +19,11 @@ import java.util.concurrent.CompletableFuture;
 @Service
 @RequiredArgsConstructor
 @Slf4j
-public class EmailSendService {
+public class EmailSendService implements IEmailSendService {
     private final JavaMailSender javaMailSender;
 
+    @Value("${spring.mail.username}")
+    private final String email;
 
     @Async("taskExecutor")
     public CompletableFuture<Boolean> sendSimpleEmailAsync(String to, String subject, String text) {
@@ -28,7 +32,7 @@ public class EmailSendService {
             message.setTo(to);
             message.setSubject(subject);
             message.setText(text);
-            message.setFrom("bhattaraipratik44@gmail.com");
+            message.setFrom(email);
 
             javaMailSender.send(message);
             log.info("Email sent successfully to: {}", to);
@@ -47,7 +51,7 @@ public class EmailSendService {
             message.setSubject(subject);
             message.setText(text);
             //get from properties
-            message.setFrom("bhattaraipratik44@gmail.com");
+            message.setFrom(email);
 
             javaMailSender.send(message);
             log.info("Bulk email sent successfully to {} recipients", recipients.size());
@@ -66,7 +70,7 @@ public class EmailSendService {
         helper.setSubject(subject);
         helper.setText(text);
         //
-        helper.setFrom("bhattaraipratik44@gmail.com");
+        helper.setFrom(email);
 
         if (attachment != null && attachment.exists()) {
             helper.addAttachment(attachment.getName(), attachment);

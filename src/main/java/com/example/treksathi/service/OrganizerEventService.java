@@ -1,9 +1,11 @@
 package com.example.treksathi.service;
 
+import com.example.treksathi.Interfaces.IEmailSendService;
+import com.example.treksathi.Interfaces.IOrganizerEventService;
 import com.example.treksathi.dto.events.*;
 import com.example.treksathi.enums.DifficultyLevel;
 import com.example.treksathi.enums.EventStatus;
-import com.example.treksathi.exception.UnauthorizedException;
+import com.example.treksathi.exception.*;
 import com.example.treksathi.mapper.EventResponseMapper;
 import com.example.treksathi.model.Event;
 import com.example.treksathi.model.EventRegistration;
@@ -27,15 +29,14 @@ import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
-public class OrganizerEventService {
+public class OrganizerEventService implements IOrganizerEventService {
 
     private final EventRepository eventRepository;
     private final UserRepository userRepository;
     private final OrganizerRepository organizerRepository;
     private final EventResponseMapper eventResponseMapper;
-    private final EmailSendService emailSendService;
+    private final IEmailSendService emailSendService;
     private final DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
-
 
     @Transactional
     public EventResponseDTO createNewEvent(EventCreateDTO eventCreateDTO) {
@@ -59,10 +60,9 @@ public class OrganizerEventService {
         return mapEntityToDto(savedEvent);
     }
 
-    @Transactional(readOnly = true)
     public List<EventResponseDTO> getEventsByOrganizer(int organizerId, UserDetails userDetails)  {
         Organizer organizer = organizerRepository.findByUserId(organizerId)
-                .orElseThrow(() -> new RuntimeException("Organizer not found with id: " + organizerId));
+                .orElseThrow(() -> new NotFoundException("Organizer not found with id: " + organizerId));
 
         String authenticatedUsername = userDetails.getUsername();
         String organizerOwnerUsername = organizer.getUser().getEmail();
@@ -78,29 +78,28 @@ public class OrganizerEventService {
     public EventDetailsOrganizerRecord getAllEventsDetails(int eventId, UserDetails userDetails) {
         String authenticatedUsername = userDetails.getUsername();
         User user = userRepository.findByEmail(authenticatedUsername)
-                .orElseThrow(() -> new RuntimeException("User not found with email: " + authenticatedUsername));
+                .orElseThrow(() -> new UsernameNotFoundException("User not found with email: " + authenticatedUsername));
 
         Organizer organizer = organizerRepository.findByUser(user);
         if (organizer == null) {
-            throw new RuntimeException("Organizer not found for user: " + authenticatedUsername);
+            throw new NotFoundException("Organizer not found for user: " + authenticatedUsername);
         }
 
         Event event = eventRepository.findById(eventId)
-                .orElseThrow(() -> new RuntimeException("Event not found with id: " + eventId));
+                .orElseThrow(() -> new EventNotFoundException("Event not found with id: " + eventId));
 
         // Verify that this organizer owns this event (security check)
         if (event.getOrganizer().getId() != organizer.getId()) {
-            throw new RuntimeException("Unauthorized: You are not the organizer of this event");
+            throw new UnauthorizedException("Unauthorized: You are not the organizer of this event");
         }
 
         // Map the event to the record (this includes all registrations)
         return eventResponseMapper.toEventDetailsOrganizerRecord(event);
     }
 
-
     public void markAttendance(int eventId, List<ParticipantsAttendanceDTO> attendanceList) {
         Event event = eventRepository.findById(eventId)
-                .orElseThrow(() -> new RuntimeException("Event not found with id: " + eventId));
+                .orElseThrow(() -> new EventNotFoundException("Event not found with id: " + eventId));
 
         // Iterate through the attendance list and update each participant's attendance status
         for (ParticipantsAttendanceDTO attendanceDTO : attendanceList) {
@@ -108,7 +107,7 @@ public class OrganizerEventService {
                     .flatMap(reg -> reg.getEventParticipants().stream())
                     .filter(p -> p.getId() == attendanceDTO.getParticipantId())
                     .findFirst()
-                    .orElseThrow(() -> new RuntimeException("Participant not found with id: " + attendanceDTO.getParticipantId()));
+                    .orElseThrow(() -> new NotFoundException("Participant not found with id: " + attendanceDTO.getParticipantId()));
 
             participant.setAttendanceStatus(attendanceDTO.getAttendanceStatus());
         }
@@ -126,7 +125,7 @@ public class OrganizerEventService {
                     .map(this::mapEntityToDto)
                     .collect(Collectors.toList());
         } catch (IllegalArgumentException e) {
-            throw new RuntimeException("Invalid status: " + status + ". Valid statuses are: PENDING, APPROVED, REJECTED, CANCELLED, COMPLETED");
+            throw new InvalidCredentialsException("Invalid status: " + status + ". Valid statuses are: PENDING, APPROVED, REJECTED, CANCELLED, COMPLETED");
         }
     }
 
@@ -135,13 +134,13 @@ public class OrganizerEventService {
     @Transactional
     public EventResponseDTO updateEvent(int id, EventCreateDTO eventCreateDTO) {
         Event event = eventRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("Event not found with id: " + id));
+                .orElseThrow(() -> new EventNotFoundException("Event not found with id: " + id));
         User user = getAuthenticatedOrganizer();
         Organizer authenticatedOrganizer = organizerRepository.findByUser(user);
 
 
         if (event.getOrganizer().getId() != authenticatedOrganizer.getId()) {
-            throw new RuntimeException("You are not authorized to update this event");
+            throw new UnauthorizedException("You are not authorized to update this event");
         }
 
         mapDtoToEntity(eventCreateDTO, event);
@@ -156,7 +155,7 @@ public class OrganizerEventService {
     @Transactional
     public EventResponseDTO updateEventStatus(int id, String status) {
         Event event = eventRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("Event not found with id: " + id));
+                .orElseThrow(() -> new EventNotFoundException("Event not found with id: " + id));
 
         try {
             EventStatus eventStatus = EventStatus.valueOf(status.toUpperCase());
@@ -166,13 +165,13 @@ public class OrganizerEventService {
             Event updatedEvent = eventRepository.save(event);
             return mapEntityToDto(updatedEvent);
         } catch (IllegalArgumentException e) {
-            throw new RuntimeException("Invalid status: " + status + ". Valid statuses are: PENDING, APPROVED, REJECTED, CANCELLED, COMPLETED");
+            throw new InvalidCredentialsException("Invalid status: " + status + ". Valid statuses are: PENDING, APPROVED, REJECTED, CANCELLED, COMPLETED");
         }
     }
 
     public BulkEmailResponse bulkEmailToParticipants(int eventId, EmailAttachmentRequest emailAttachmentRequest) {
         Event event = eventRepository.findById(eventId)
-                .orElseThrow(() -> new RuntimeException("Event not found with id: " + eventId));
+                .orElseThrow(() -> new EventNotFoundException("Event not found with id: " + eventId));
 
         List<String> registeredEmails = event.getEventRegistration().stream()
                 .map(EventRegistration::getEmail)
@@ -192,7 +191,7 @@ public class OrganizerEventService {
                 .toList();
 
         if (validRecipients.isEmpty()) {
-            throw new RuntimeException("No valid recipients found. All provided emails are not registered for this event.");
+            throw new InvalidCredentialsException("No valid recipients found. All provided emails are not registered for this event.");
         }
 
         emailSendService.sendBulkEmailAsync(
@@ -215,14 +214,14 @@ public class OrganizerEventService {
     @Transactional
     public void deleteEvent(int id) {
         Event event = eventRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("Event not found with id: " + id));
+                .orElseThrow(() -> new EventNotFoundException("Event not found with id: " + id));
 
         // Check if the authenticated user is the owner of this event
         User user = getAuthenticatedOrganizer();
         Organizer authenticatedOrganizer = organizerRepository.findByUser(user);
 
         if (event.getOrganizer().getId() != authenticatedOrganizer.getId()) {
-            throw new RuntimeException("You are not authorized to delete this event");
+            throw new UnauthorizedException("You are not authorized to delete this event");
         }
 
         eventRepository.delete(event);
@@ -232,14 +231,14 @@ public class OrganizerEventService {
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
 
         if (authentication == null || !authentication.isAuthenticated()) {
-            throw new RuntimeException("User is not authenticated");
+            throw new UsernameNotFoundException("User is not authenticated");
         }
 
         // Get the email from authentication
         String username = authentication.getName();
 
         User user = userRepository.findByEmail(username)
-                .orElseThrow(() -> new RuntimeException("Organizer not found for authenticated user"));
+                .orElseThrow(() -> new NotFoundException("Organizer not found for authenticated user"));
 
         return user;
     }
@@ -254,7 +253,7 @@ public class OrganizerEventService {
         try {
             event.setDifficultyLevel(DifficultyLevel.valueOf(dto.getDifficultyLevel().toUpperCase()));
         } catch (IllegalArgumentException e) {
-            throw new RuntimeException("Invalid difficulty level: " + dto.getDifficultyLevel() +
+            throw new InvalidCredentialsException("Invalid difficulty level: " + dto.getDifficultyLevel() +
                     ". Valid levels are: EASY, MODERATE, DIFFICULT, EXTREME");
         }
 

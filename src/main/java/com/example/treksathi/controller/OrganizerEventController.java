@@ -1,8 +1,8 @@
 package com.example.treksathi.controller;
 
+import com.example.treksathi.Interfaces.IOrganizerEventService;
 import com.example.treksathi.dto.events.*;
 import com.example.treksathi.record.EventDetailsOrganizerRecord;
-import com.example.treksathi.service.OrganizerEventService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
@@ -18,8 +18,7 @@ import java.util.List;
 @RequiredArgsConstructor
 public class OrganizerEventController {
 
-    private final OrganizerEventService organizerEventService;
-
+    private final IOrganizerEventService organizerEventService;
 
     // CREATE
     @PostMapping("/register-event")

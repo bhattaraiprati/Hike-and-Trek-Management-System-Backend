@@ -1,8 +1,8 @@
 package com.example.treksathi.controller;
 
+import com.example.treksathi.Interfaces.IChatRoomService;
 import com.example.treksathi.record.chat.ChatOutputDTO;
 import com.example.treksathi.record.chat.ChatRoomDTO;
-import com.example.treksathi.service.ChatRoomService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
@@ -18,7 +18,7 @@ import java.util.List;
 @Slf4j
 public class ChatRoomRestController {
 
-    private final ChatRoomService chatRoomService;
+    private final IChatRoomService chatRoomService;
 
     @PostMapping("/rooms/create/{eventId}")
     public ResponseEntity<ChatRoomDTO> createChatRoom(
@@ -36,11 +36,6 @@ public class ChatRoomRestController {
         return ResponseEntity.status(HttpStatus.CREATED).body(chatRoomDTO);
     }
 
-//    @GetMapping("/rooms/{eventId}")
-//    public ResponseEntity<String> getOrganizerChatRooms(
-//            @PathVariable int eventId) {
-//        return ResponseEntity.ok("test success");
-//    }
 
     @GetMapping("/rooms/{eventId}")
     public ResponseEntity<List<ChatRoomDTO>> getOrganizerChatRooms(

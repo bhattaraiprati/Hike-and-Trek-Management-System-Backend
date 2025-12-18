@@ -1,5 +1,6 @@
 package com.example.treksathi.controller;
 
+import com.example.treksathi.Interfaces.IEventRegistrationService;
 import com.example.treksathi.enums.EventRegistrationStatus;
 
 import com.example.treksathi.record.BookingResponseRecord;
@@ -18,7 +19,7 @@ import java.util.List;
 @RequestMapping("/hiker/registration")
 public class EventRegistrationController {
 
-    private  final EventRegistrationService eventRegistrationService;
+    private  final IEventRegistrationService eventRegistrationService;
 
 
     @GetMapping("/{id}")
