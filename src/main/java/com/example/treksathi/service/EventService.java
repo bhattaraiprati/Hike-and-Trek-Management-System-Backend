@@ -1,8 +1,11 @@
 package com.example.treksathi.service;
 
+import com.example.treksathi.Interfaces.IEventService;
+import com.example.treksathi.Interfaces.IPaymentGatewayService;
 import com.example.treksathi.dto.events.EventResponseDTO;
 import com.example.treksathi.dto.pagination.PaginatedResponseDTO;
 import com.example.treksathi.enums.EventStatus;
+import com.example.treksathi.exception.EventNotFoundException;
 import com.example.treksathi.mapper.BookingResponseMapper;
 import com.example.treksathi.mapper.EventRegistrationMapper;
 import com.example.treksathi.model.Event;
@@ -28,9 +31,9 @@ import java.util.stream.Collectors;
 @Service
 @RequiredArgsConstructor
 @Slf4j
-public class EventService {
+public class EventService implements IEventService {
 
-    private final PaymentGatewayService paymentGatewayService;
+    private final IPaymentGatewayService paymentGatewayService;
     private final EventRepository eventRepository;
     private final EventRegistrationRepository eventRegistrationRepository;
     private final ReviewRepository reviewRepository;
@@ -39,7 +42,6 @@ public class EventService {
 
 
     // READ - Get all events
-    @Transactional(readOnly = true)
     public PaginatedResponseDTO<EventCardResponse> getAllEvents(int page, int size) {
         Page<EventCardResponse> eventPage = eventRepository.findEventCardsWithParticipantCount(
                 EventStatus.ACTIVE,
@@ -55,10 +57,9 @@ public class EventService {
     }
 
     // READ - Get event by ID with organizer details
-    @Transactional(readOnly = true)
     public EventResponseRecord getEventById(int id) {
         Event event = eventRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("Event not found with id: " + id));
+                .orElseThrow(() -> new EventNotFoundException("Event not found with id: " + id));
 
         // Ensure organizer is loaded
         Organizer organizer = event.getOrganizer();

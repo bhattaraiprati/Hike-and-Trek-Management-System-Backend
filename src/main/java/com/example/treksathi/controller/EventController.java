@@ -1,13 +1,12 @@
 package com.example.treksathi.controller;
 
+import com.example.treksathi.Interfaces.IEventService;
+import com.example.treksathi.Interfaces.IPaymentGatewayService;
 import com.example.treksathi.dto.events.EventRegisterDTO;
-import com.example.treksathi.dto.events.EventResponseDTO;
 import com.example.treksathi.dto.pagination.PaginatedResponseDTO;
 import com.example.treksathi.model.EventRegistration;
 import com.example.treksathi.record.EventCardResponse;
 import com.example.treksathi.record.EventResponseRecord;
-import com.example.treksathi.service.EventService;
-import com.example.treksathi.service.PaymentGatewayService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.ResponseEntity;
@@ -21,9 +20,9 @@ import java.util.List;
 @Slf4j
 public class EventController {
 
-    private final EventService eventService;
+    private final IEventService eventService;
 
-    private final PaymentGatewayService paymentGatewayService;
+    private final IPaymentGatewayService paymentGatewayService;
 
     private static final String FRONTEND_URL = "http://localhost:5173";
 

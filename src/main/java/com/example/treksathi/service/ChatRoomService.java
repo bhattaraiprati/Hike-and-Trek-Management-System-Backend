@@ -1,7 +1,9 @@
 package com.example.treksathi.service;
 
+import com.example.treksathi.Interfaces.IChatRoomService;
 import com.example.treksathi.enums.ChatRoomType;
 import com.example.treksathi.enums.Role;
+import com.example.treksathi.exception.*;
 import com.example.treksathi.model.*;
 import com.example.treksathi.record.chat.ChatOutputDTO;
 import com.example.treksathi.record.chat.ChatRoomDTO;
@@ -16,25 +18,25 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.server.ResponseStatusException;
 
 import java.util.List;
+import java.util.Optional;
 import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
 @Transactional
 @Slf4j
-public class ChatRoomService {
+public class ChatRoomService  implements IChatRoomService {
 
     private final ChatRoomRepository chatRoomRepository;
     private final ChatMessageRepository chatMessageRepository;
     private final EventRepository eventRepository;
+    private final EventRegistrationRepository eventRegistrationRepository;
     private final UserRepository userRepository;
     private final OrganizerRepository organizerRepository;
 
     public ChatRoomDTO createChatRoom(int eventId, String name, String userEmail) {
         User user = getUserByEmail(userEmail);
         validateOrganizerRole(user);
-
-
 
         Event event = getEventById(eventId);
 
@@ -44,7 +46,32 @@ public class ChatRoomService {
         return mapToChatRoomDTO(chatRoom);
     }
 
-    @Transactional(readOnly = true)
+    public ChatRoomDTO registerParticipantsForEventChat(int eventId, String userEmail) {
+        User user = getUserByEmail(userEmail);
+        Event event = getEventById(eventId);
+
+        Optional<List<EventRegistration>> registrationsOpt = eventRegistrationRepository.findByUserId(user.getId());
+        boolean isRegistered = registrationsOpt
+                .map(list -> list.stream().anyMatch(reg -> reg.getEvent().getId() == eventId))
+                .orElse(false);
+
+        if (!isRegistered) {
+            throw new ChatRoomNotFoundException("Please register to this event");
+        }
+
+        ChatRoom chatRoom = chatRoomRepository.findByEvent(event).orElseThrow(() ->
+                new ChatRoomNotFoundException("No chat room found for this event"));
+
+
+        if (!chatRoom.getParticipants().contains(user)) {
+            chatRoom.getParticipants().add(user);
+            chatRoom = chatRoomRepository.save(chatRoom);
+        }
+
+        return mapToChatRoomDTO(chatRoom);
+    }
+
+
     public List<ChatRoomDTO> getChatRoomDetails(int eventId, String userEmail) {
         User user = getUserByEmail(userEmail);
         Event event = getEventById(eventId);
@@ -59,13 +86,12 @@ public class ChatRoomService {
         return List.of(mapToChatRoomDTO(room));
     }
 
-    @Transactional(readOnly = true)
     public List<ChatRoomDTO> getUserChatRooms(String userEmail) {
         User user = getUserByEmail(userEmail);
         List<ChatRoom> rooms = chatRoomRepository.findByParticipantsContaining(user);
 
         if (rooms.isEmpty()) {
-            throw new ResponseStatusException(HttpStatus.NOT_FOUND, "No chat rooms found for user");
+            throw new ChatRoomNotFoundException("Please join a chat room to view messages.");
         }
 
         return rooms.stream()
@@ -73,7 +99,6 @@ public class ChatRoomService {
                 .collect(Collectors.toList());
     }
 
-    @Transactional(readOnly = true)
     public List<ChatOutputDTO> getMessages(Long roomId, int limit, String userEmail) {
         User user = getUserByEmail(userEmail);
         ChatRoom room = getChatRoomById(roomId);
@@ -93,22 +118,22 @@ public class ChatRoomService {
 
     private User getUserByEmail(String email) {
         return userRepository.findByEmail(email)
-                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "User not found"));
+                .orElseThrow(() -> new UsernameNotFoundException("User not found"));
     }
 
     private Event getEventById(int eventId) {
         return eventRepository.findById(eventId)
-                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Event not found"));
+                .orElseThrow(() -> new EventNotFoundException("Event not found"));
     }
 
     private ChatRoom getChatRoomById(Long roomId) {
         return chatRoomRepository.findById(roomId)
-                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Chat room not found"));
+                .orElseThrow(() -> new NotFoundException("Chat room not found"));
     }
 
     private void validateOrganizerRole(User user) {
         if (user.getRole() != Role.ORGANIZER) {
-            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Only organizers can create chat rooms");
+            throw new UnauthorizedException("Only organizers can create chat rooms");
         }
     }
 

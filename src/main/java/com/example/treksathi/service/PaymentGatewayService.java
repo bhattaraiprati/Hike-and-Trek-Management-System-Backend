@@ -1,9 +1,12 @@
 package com.example.treksathi.service;
 
+import com.example.treksathi.Interfaces.IPaymentGatewayService;
 import com.example.treksathi.dto.events.EsewaStatusResponse;
 import com.example.treksathi.dto.events.EventRegisterDTO;
 import com.example.treksathi.enums.EventRegistrationStatus;
 import com.example.treksathi.enums.PaymentStatus;
+import com.example.treksathi.exception.EventNotFoundException;
+import com.example.treksathi.exception.NotFoundException;
 import com.example.treksathi.model.*;
 import com.example.treksathi.record.EsewaPaymentRequest;
 import com.example.treksathi.repository.*;
@@ -11,6 +14,7 @@ import com.example.treksathi.util.SignatureUtil;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.client.RestTemplate;
@@ -21,12 +25,16 @@ import java.util.*;
 @Service
 @RequiredArgsConstructor
 @Slf4j
-public class PaymentGatewayService {
+public class PaymentGatewayService  implements IPaymentGatewayService {
 
-    private static final String ESEWA_GATEWAY_URL = "https://rc-epay.esewa.com.np";
-    private static final String ESEWA_PRODUCT_CODE = "EPAYTEST";
-    private static final String SUCCESS_URL = "http://localhost:8080/api/event/registration/success";
-    private static final String FAILURE_URL = "http://localhost:8080/api/event/registration/failure";
+    @Value("${ESEWA.GATEWAY.URL}")
+    private final String ESEWA_GATEWAY_URL;
+    @Value("${ESEWA.PRODUCT.CODE}")
+    private final String ESEWA_PRODUCT_CODE;
+    @Value("${ESEWA.SUCCESS.URL}")
+    private final String SUCCESS_URL;
+    @Value("${ESEWA.FAILURE.URL}")
+    private final String FAILURE_URL;
 
     private final EventRegistrationRepository eventRegistrationRepository;
     private final EventRepository eventRepository;
@@ -70,10 +78,10 @@ public class PaymentGatewayService {
     public EventRegistration createEvent(EventRegisterDTO eventRegisterDTO) {
         // Fetch Event and User entities
         Event event = eventRepository.findById(eventRegisterDTO.getEventId())
-                .orElseThrow(() -> new RuntimeException("Event not found with id: " + eventRegisterDTO.getEventId()));
+                .orElseThrow(() -> new EventNotFoundException("Event not found with id: " + eventRegisterDTO.getEventId()));
 
         User user = userRepository.findById(eventRegisterDTO.getUserId())
-                .orElseThrow(() -> new RuntimeException("User not found with id: " + eventRegisterDTO.getUserId()));
+                .orElseThrow(() -> new NotFoundException("User not found with id: " + eventRegisterDTO.getUserId()));
 
         // Create EventRegistration
         EventRegistration eventRegistration = new EventRegistration();
@@ -164,7 +172,7 @@ public class PaymentGatewayService {
 
             // 5. Update Database
             Payments payment = paymentsRepository.findByTransactionUuid(transactionUuid)
-                    .orElseThrow(() -> new RuntimeException("Payment not found"));
+                    .orElseThrow(() -> new NotFoundException("Payment not found"));
 
             EventRegistration registration = payment.getEventRegistration();
 
@@ -206,7 +214,7 @@ public class PaymentGatewayService {
     public EventRegistration getRegistrationByTransactionUuid(String uuid) {
         return paymentsRepository.findByTransactionUuid(uuid)
                 .map(Payments::getEventRegistration)
-                .orElseThrow(() -> new RuntimeException("Registration not found"));
+                .orElseThrow(() -> new NotFoundException("Registration not found"));
     }
 
     private void mapDtoToEntity(EventRegisterDTO dto, EventRegistration event) {

@@ -1,5 +1,6 @@
 package com.example.treksathi.controller;
 
+import com.example.treksathi.Interfaces.IUserServices;
 import com.example.treksathi.config.JWTService;
 import com.example.treksathi.dto.user.*;
 import com.example.treksathi.enums.AccountStatus;
@@ -7,23 +8,16 @@ import com.example.treksathi.exception.InvalidCredentialsException;
 import com.example.treksathi.exception.UnauthorizedException;
 import com.example.treksathi.exception.UsernameNotFoundException;
 import com.example.treksathi.model.User;
-import com.example.treksathi.record.BookingResponseRecord;
-import com.example.treksathi.service.InMemoryTokenBlacklist;
-import com.example.treksathi.service.UserServices;
+
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import net.bytebuddy.asm.Advice;
 import org.springframework.dao.DuplicateKeyException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.security.core.annotation.AuthenticationPrincipal;
-import org.springframework.security.core.userdetails.UserDetails;
-import org.springframework.util.StringUtils;
 import org.springframework.web.bind.annotation.*;
 
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Optional;
@@ -34,7 +28,7 @@ import java.util.Optional;
 @Slf4j
 public class UserController {
 
-    private final UserServices userServices;
+    private final IUserServices userServices;
 
     @PostMapping("/register")
     public ResponseEntity<?> register(@Valid @RequestBody UserCreateDTO user){

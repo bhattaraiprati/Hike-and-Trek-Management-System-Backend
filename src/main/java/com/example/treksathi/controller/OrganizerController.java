@@ -1,5 +1,6 @@
 package com.example.treksathi.controller;
 
+import com.example.treksathi.Interfaces.IOrganizerService;
 import com.example.treksathi.dto.organizer.OrganizerRegistrationDTO;
 import com.example.treksathi.model.Organizer;
 import com.example.treksathi.service.OrganizerService;
@@ -16,7 +17,7 @@ import org.springframework.web.bind.annotation.*;
 @RequestMapping("/auth")
 public class OrganizerController {
 
-    private final OrganizerService organizerService;
+    private final IOrganizerService organizerService;
 
     @GetMapping("/greet")
     public String greet(HttpServletRequest request){

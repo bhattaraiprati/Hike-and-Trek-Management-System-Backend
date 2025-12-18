@@ -1,21 +1,25 @@
 package com.example.treksathi.service;
 
+import com.example.treksathi.Interfaces.IEventRegistrationService;
 import com.example.treksathi.enums.EventRegistrationStatus;
 import com.example.treksathi.enums.EventStatus;
 import com.example.treksathi.exception.EventNotFoundException;
+import com.example.treksathi.exception.NotFoundException;
 import com.example.treksathi.mapper.BookingResponseMapper;
 import com.example.treksathi.mapper.EventRegistrationMapper;
 import com.example.treksathi.model.EventRegistration;
 import com.example.treksathi.record.*;
 import com.example.treksathi.repository.EventRegistrationRepository;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
 
 @Service
 @RequiredArgsConstructor
-public class EventRegistrationService {
+@Slf4j
+public class EventRegistrationService implements IEventRegistrationService {
 
     private  final EventRegistrationRepository eventRegistrationRepository;
     private final EventRegistrationMapper mapper;
@@ -24,13 +28,13 @@ public class EventRegistrationService {
 
     public EventRegistrationResponse getRegistrationDetailsById(int id){
         EventRegistration reg = eventRegistrationRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("Booking not found with ID: " + id));
+                .orElseThrow(() -> new NotFoundException("Booking not found with ID: " + id));
         return mapper.toResponse(reg);
     }
 
     public List<BookingResponseRecord> getAllEventsByUserId(int id, List<EventRegistrationStatus> status){
-        List<EventRegistration> reg = eventRegistrationRepository.findByUserIdAndStatus(id, status).orElseThrow(null);
-
+        List<EventRegistration> reg = eventRegistrationRepository.findByUserIdAndStatusWithPayments(id, status).orElseThrow( null);
+//        log.info("payments Details", reg.getPayments());
         return reg.stream()
                 .map(bookingMapper::toResponse)
                 .toList();
