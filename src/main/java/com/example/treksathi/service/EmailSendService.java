@@ -23,7 +23,7 @@ public class EmailSendService implements IEmailSendService {
     private final JavaMailSender javaMailSender;
 
     @Value("${spring.mail.username}")
-    private final String email;
+    private String email;
 
     @Async("taskExecutor")
     public CompletableFuture<Boolean> sendSimpleEmailAsync(String to, String subject, String text) {

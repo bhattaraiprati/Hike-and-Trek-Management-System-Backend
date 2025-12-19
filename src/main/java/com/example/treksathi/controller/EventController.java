@@ -7,6 +7,7 @@ import com.example.treksathi.dto.pagination.PaginatedResponseDTO;
 import com.example.treksathi.model.EventRegistration;
 import com.example.treksathi.record.EventCardResponse;
 import com.example.treksathi.record.EventResponseRecord;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.ResponseEntity;
@@ -18,6 +19,7 @@ import java.util.List;
 @RequestMapping("/event")
 @RequiredArgsConstructor
 @Slf4j
+@Tag(name = "Event Apis", description = "APIs related to Event Listing, Details, and Registration with Payment Integration")
 public class EventController {
 
     private final IEventService eventService;

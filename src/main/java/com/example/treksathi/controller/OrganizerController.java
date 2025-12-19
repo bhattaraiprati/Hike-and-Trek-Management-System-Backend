@@ -4,6 +4,7 @@ import com.example.treksathi.Interfaces.IOrganizerService;
 import com.example.treksathi.dto.organizer.OrganizerRegistrationDTO;
 import com.example.treksathi.model.Organizer;
 import com.example.treksathi.service.OrganizerService;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -15,6 +16,7 @@ import org.springframework.web.bind.annotation.*;
 @RestController
 @RequiredArgsConstructor
 @RequestMapping("/auth")
+@Tag(name = "Organizer Apis", description = "APIs related to Organizer Registration and Management")
 public class OrganizerController {
 
     private final IOrganizerService organizerService;

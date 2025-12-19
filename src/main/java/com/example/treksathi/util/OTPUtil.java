@@ -1,9 +1,11 @@
 package com.example.treksathi.util;
 
 import com.example.treksathi.Interfaces.IOTPUtil;
+import org.springframework.stereotype.Component;
 
 import java.security.SecureRandom;
 
+@Component
 public class OTPUtil implements IOTPUtil {
 
     private static final SecureRandom random = new SecureRandom();
