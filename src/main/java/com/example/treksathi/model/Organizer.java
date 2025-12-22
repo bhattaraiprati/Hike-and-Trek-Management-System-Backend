@@ -23,6 +23,7 @@ public class Organizer {
     private String contact_person;
     private String address;
     private String phone;
+    private String cover_image;
     private String document_url;
     @Column(length = 250)
     private String about;

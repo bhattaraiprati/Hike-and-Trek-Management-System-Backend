@@ -1,16 +1,17 @@
 package com.example.treksathi.repository;
 
-import com.example.treksathi.enums.EventStatus;
-import com.example.treksathi.model.Event;
-import com.example.treksathi.model.Organizer;
-import com.example.treksathi.record.EventCardResponse;
+import java.util.List;
+
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
-import java.util.List;
+import com.example.treksathi.enums.EventStatus;
+import com.example.treksathi.model.Event;
+import com.example.treksathi.model.Organizer;
+import com.example.treksathi.record.EventCardResponse;
 
 public interface EventRepository extends JpaRepository<Event, Integer> {
 
@@ -30,6 +31,15 @@ public interface EventRepository extends JpaRepository<Event, Integer> {
 
     @Query("SELECT COUNT(e) FROM Event e WHERE e.organizer.id = :organizerId")
     int countByOrganizerId(@Param("organizerId") int organizerId);
+
+    @Query("SELECT COUNT(e) FROM Event e WHERE e.organizer.id = :organizerId AND e.status = :status")
+    int countByOrganizerIdAndStatus(@Param("organizerId") int organizerId, @Param("status") EventStatus status);
+
+    @Query("SELECT COUNT(e) FROM Event e WHERE e.organizer.id = :organizerId AND e.status = :status AND e.date >= CURRENT_DATE")
+    int countUpcomingEventsByOrganizerIdAndStatus(@Param("organizerId") int organizerId, @Param("status") EventStatus status);
+
+    @Query("SELECT e FROM Event e WHERE e.organizer.id = :organizerId AND e.status = :status AND e.date >= CURRENT_DATE ORDER BY e.date ASC")
+    List<Event> findUpcomingEventsByOrganizerId(@Param("organizerId") int organizerId, @Param("status") EventStatus status);
 
     @Query("SELECT new com.example.treksathi.record.EventCardResponse(" +
             "e.id, e.title, e.description, e.location, e.date, " +

@@ -1,17 +1,17 @@
 package com.example.treksathi.repository;
 
-import com.example.treksathi.enums.EventRegistrationStatus;
-import com.example.treksathi.enums.EventStatus;
-import com.example.treksathi.model.EventRegistration;
-import com.example.treksathi.model.User;
-import com.example.treksathi.record.EventCardResponse;
-import com.example.treksathi.record.UpcommingEventRecord;
+import java.util.List;
+import java.util.Optional;
+
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
-import java.util.List;
-import java.util.Optional;
+import com.example.treksathi.enums.EventRegistrationStatus;
+import com.example.treksathi.enums.EventStatus;
+import com.example.treksathi.model.EventRegistration;
+import com.example.treksathi.model.User;
+import com.example.treksathi.record.UpcommingEventRecord;
 
     public interface EventRegistrationRepository extends JpaRepository<EventRegistration, Integer> {
 
@@ -49,4 +49,11 @@ import java.util.Optional;
                 "JOIN er.event e " +
                 "WHERE er.user.id = :userId AND e.status = :status")
         Optional<List<UpcommingEventRecord>> findActiveEventByUserId(@Param("userId") int userId, @Param("status") EventStatus status);
+
+        @Query("SELECT er FROM EventRegistration er " +
+                "JOIN FETCH er.event e " +
+                "JOIN FETCH er.user u " +
+                "WHERE e.organizer.id = :organizerId " +
+                "ORDER BY er.registrationDate DESC")
+        List<EventRegistration> findRecentRegistrationsByOrganizerId(@Param("organizerId") int organizerId);
      }
