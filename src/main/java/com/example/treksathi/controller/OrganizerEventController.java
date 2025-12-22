@@ -3,6 +3,7 @@ package com.example.treksathi.controller;
 import com.example.treksathi.Interfaces.IOrganizerEventService;
 import com.example.treksathi.dto.events.*;
 import com.example.treksathi.record.EventDetailsOrganizerRecord;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
@@ -16,6 +17,7 @@ import java.util.List;
 @RestController
 @RequestMapping("/organizer/event")
 @RequiredArgsConstructor
+@Tag(name = "Organizer Event Apis", description = "APIs related to Organizer Event Management")
 public class OrganizerEventController {
 
     private final IOrganizerEventService organizerEventService;

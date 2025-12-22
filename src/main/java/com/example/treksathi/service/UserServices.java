@@ -23,7 +23,6 @@ import com.example.treksathi.model.User;
 import com.example.treksathi.repository.OTPRepository;
 import com.example.treksathi.repository.OrganizerRepository;
 import com.example.treksathi.repository.UserRepository;
-import com.example.treksathi.util.OTPUtil;
 import jakarta.servlet.http.HttpServletRequest;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;

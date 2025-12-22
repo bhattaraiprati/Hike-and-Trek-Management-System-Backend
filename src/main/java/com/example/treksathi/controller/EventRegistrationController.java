@@ -7,6 +7,7 @@ import com.example.treksathi.record.BookingResponseRecord;
 import com.example.treksathi.record.EventRegistrationResponse;
 import com.example.treksathi.record.UpcommingEventRecord;
 import com.example.treksathi.service.EventRegistrationService;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 
@@ -17,6 +18,7 @@ import java.util.List;
 @RestController
 @RequiredArgsConstructor
 @RequestMapping("/hiker/registration")
+@Tag(name = "Event Registration Apis", description = "APIs related to Event Registrations and User Bookings")
 public class EventRegistrationController {
 
     private  final IEventRegistrationService eventRegistrationService;

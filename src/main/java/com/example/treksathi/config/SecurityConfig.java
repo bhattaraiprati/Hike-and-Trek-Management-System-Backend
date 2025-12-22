@@ -24,6 +24,7 @@ import org.springframework.web.client.RestTemplate;
 import org.springframework.web.cors.CorsConfiguration;
 import org.springframework.web.cors.CorsConfigurationSource;
 import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
+import org.springframework.web.servlet.config.annotation.EnableWebMvc;
 
 import java.io.IOException;
 import java.lang.reflect.Array;
@@ -64,7 +65,9 @@ public class SecurityConfig {
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers( "/auth/**", "/event/registration/success", "/event/registration/failure").permitAll()
                         .requestMatchers("/api/oauth2/**", "/oauth2/**", "/login/oauth2/**", "/oauth2/authorization/**").permitAll()
-
+                        .requestMatchers("/v3/api-docs", "/swagger-ui/**","/swagger-ui.html",
+                                "/swagger-resources/**",
+                                "/webjars/**").permitAll()
                         .requestMatchers("/ws/**").permitAll()
                         .requestMatchers("/ws/info/**").permitAll()  // Especially this one
                         .requestMatchers("/api/ws/**").permitAll()

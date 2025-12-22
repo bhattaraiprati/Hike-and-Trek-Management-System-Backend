@@ -3,6 +3,7 @@ package com.example.treksathi.controller;
 import com.example.treksathi.Interfaces.IChatRoomService;
 import com.example.treksathi.record.chat.ChatOutputDTO;
 import com.example.treksathi.record.chat.ChatRoomDTO;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
@@ -16,6 +17,7 @@ import java.util.List;
 @RequestMapping("/chat")
 @RequiredArgsConstructor
 @Slf4j
+@Tag(name = "Chat Room APIS", description = "APIs related to Chat Room Creation, Message Retrieval, and Participant Enrollment")
 public class ChatRoomRestController {
 
     private final IChatRoomService chatRoomService;

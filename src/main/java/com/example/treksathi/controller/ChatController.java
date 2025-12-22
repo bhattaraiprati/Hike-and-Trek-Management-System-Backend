@@ -1,15 +1,8 @@
 package com.example.treksathi.controller;
 
 
-import com.example.treksathi.model.ChatMessage;
-import com.example.treksathi.model.ChatRoom;
-import com.example.treksathi.model.User;
-import com.example.treksathi.record.chat.ChatMessageDTO;
-import com.example.treksathi.record.chat.ChatOutputDTO;
-import com.example.treksathi.repository.ChatMessageRepository;
-import com.example.treksathi.repository.ChatRoomRepository;
-import com.example.treksathi.repository.UserRepository;
-import lombok.RequiredArgsConstructor;
+import java.time.LocalDateTime;
+
 import org.springframework.messaging.handler.annotation.DestinationVariable;
 import org.springframework.messaging.handler.annotation.MessageMapping;
 import org.springframework.messaging.handler.annotation.Payload;
@@ -18,7 +11,16 @@ import org.springframework.security.core.Authentication;
 import org.springframework.stereotype.Controller;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.time.LocalDateTime;
+import com.example.treksathi.model.ChatMessage;
+import com.example.treksathi.model.ChatRoom;
+import com.example.treksathi.model.User;
+import com.example.treksathi.record.chat.ChatMessageDTO;
+import com.example.treksathi.record.chat.ChatOutputDTO;
+import com.example.treksathi.repository.ChatMessageRepository;
+import com.example.treksathi.repository.ChatRoomRepository;
+import com.example.treksathi.repository.UserRepository;
+
+import lombok.RequiredArgsConstructor;
 
 @Controller
 @RequiredArgsConstructor
@@ -44,7 +46,7 @@ public class ChatController {
             throw new RuntimeException("Not authorized to send message in this room");
         }
 
-        ChatRoom chatRoom = chatRoomRepository.getReferenceById(chatRoomId);
+        ChatRoom chatRoom = chatRoomRepository.getReferenceById(chatRoomId.intValue());
 
         ChatMessage chatMessage = new ChatMessage();
         chatMessage.setChatRoom(chatRoom);

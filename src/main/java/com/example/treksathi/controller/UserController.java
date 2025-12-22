@@ -9,6 +9,7 @@ import com.example.treksathi.exception.UnauthorizedException;
 import com.example.treksathi.exception.UsernameNotFoundException;
 import com.example.treksathi.model.User;
 
+import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -26,6 +27,7 @@ import java.util.Optional;
 @RequestMapping("/auth")
 @RequiredArgsConstructor
 @Slf4j
+@Tag(name = "User Apis", description = "APIs related to User Registration, Login, OTP Verification, and Profile Image Management")
 public class UserController {
 
     private final IUserServices userServices;

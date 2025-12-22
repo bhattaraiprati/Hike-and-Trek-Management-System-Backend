@@ -28,13 +28,13 @@ import java.util.*;
 public class PaymentGatewayService  implements IPaymentGatewayService {
 
     @Value("${ESEWA.GATEWAY.URL}")
-    private final String ESEWA_GATEWAY_URL;
+    private String ESEWA_GATEWAY_URL;
     @Value("${ESEWA.PRODUCT.CODE}")
-    private final String ESEWA_PRODUCT_CODE;
+    private String ESEWA_PRODUCT_CODE;
     @Value("${ESEWA.SUCCESS.URL}")
-    private final String SUCCESS_URL;
+    private String SUCCESS_URL;
     @Value("${ESEWA.FAILURE.URL}")
-    private final String FAILURE_URL;
+    private String FAILURE_URL;
 
     private final EventRegistrationRepository eventRegistrationRepository;
     private final EventRepository eventRepository;

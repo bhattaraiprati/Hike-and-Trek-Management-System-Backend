@@ -5,9 +5,9 @@ import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
-import lombok.RequiredArgsConstructor;
+
 import lombok.extern.slf4j.Slf4j;
-import net.bytebuddy.implementation.bytecode.Throw;
+
 import org.springframework.context.annotation.Lazy;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.context.SecurityContextHolder;
@@ -35,6 +35,16 @@ public class JwtAuthFilter extends OncePerRequestFilter {
     @Override
     protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain filterChain) throws ServletException, TokenExpireException, IOException {
         log.info("incoming request: {}", request.getRequestURI());
+        String requestPath = request.getRequestURI();
+        log.info("incoming request: {}", requestPath);
+
+        if (requestPath.contains("/swagger-ui") ||
+                requestPath.contains("/v3/api-docs") ||
+                requestPath.contains("/swagger-resources") ||
+                requestPath.contains("/webjars")) {
+            filterChain.doFilter(request, response);
+            return;
+        }
 
         final String authHeader = request.getHeader("Authorization");
         if (authHeader == null || !authHeader.startsWith("Bearer ")) {
@@ -42,6 +52,8 @@ public class JwtAuthFilter extends OncePerRequestFilter {
             return;
         }
         String token = authHeader.substring(7).trim();
+
+
 
         try{
         String email = jwtService.getUsernameFormToken(token);
