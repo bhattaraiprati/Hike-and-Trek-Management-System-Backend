@@ -1,9 +1,12 @@
 package com.example.treksathi.repository;
 
-import com.example.treksathi.model.Reviews;
+import java.util.List;
+
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
+
+import com.example.treksathi.model.Reviews;
 
 public interface ReviewRepository extends JpaRepository<Reviews, Integer> {
 
@@ -16,4 +19,11 @@ public interface ReviewRepository extends JpaRepository<Reviews, Integer> {
             "JOIN r.events e " +
             "WHERE e.organizer.id = :organizerId")
     Long countByOrganizerId(@Param("organizerId") int organizerId);
+
+    @Query("SELECT r FROM Reviews r " +
+            "JOIN FETCH r.events e " +
+            "JOIN FETCH r.user u " +
+            "WHERE e.organizer.id = :organizerId " +
+            "ORDER BY r.createdAt DESC")
+    List<Reviews> findRecentReviewsByOrganizerId(@Param("organizerId") int organizerId);
 }
