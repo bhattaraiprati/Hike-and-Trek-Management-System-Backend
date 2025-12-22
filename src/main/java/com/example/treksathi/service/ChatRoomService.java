@@ -1,15 +1,9 @@
 package com.example.treksathi.service;
 
-import com.example.treksathi.Interfaces.IChatRoomService;
-import com.example.treksathi.enums.ChatRoomType;
-import com.example.treksathi.enums.Role;
-import com.example.treksathi.exception.*;
-import com.example.treksathi.model.*;
-import com.example.treksathi.record.chat.ChatOutputDTO;
-import com.example.treksathi.record.chat.ChatRoomDTO;
-import com.example.treksathi.repository.*;
-import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
+import java.util.List;
+import java.util.Optional;
+import java.util.stream.Collectors;
+
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.http.HttpStatus;
@@ -17,9 +11,31 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.server.ResponseStatusException;
 
-import java.util.List;
-import java.util.Optional;
-import java.util.stream.Collectors;
+import com.example.treksathi.Interfaces.IChatRoomService;
+import com.example.treksathi.enums.ChatRoomType;
+import com.example.treksathi.enums.Role;
+import com.example.treksathi.exception.ChatRoomNotFoundException;
+import com.example.treksathi.exception.EventNotFoundException;
+import com.example.treksathi.exception.NotFoundException;
+import com.example.treksathi.exception.UnauthorizedException;
+import com.example.treksathi.exception.UsernameNotFoundException;
+import com.example.treksathi.model.ChatMessage;
+import com.example.treksathi.model.ChatRoom;
+import com.example.treksathi.model.Event;
+import com.example.treksathi.model.EventRegistration;
+import com.example.treksathi.model.Organizer;
+import com.example.treksathi.model.User;
+import com.example.treksathi.record.chat.ChatOutputDTO;
+import com.example.treksathi.record.chat.ChatRoomDTO;
+import com.example.treksathi.repository.ChatMessageRepository;
+import com.example.treksathi.repository.ChatRoomRepository;
+import com.example.treksathi.repository.EventRegistrationRepository;
+import com.example.treksathi.repository.EventRepository;
+import com.example.treksathi.repository.OrganizerRepository;
+import com.example.treksathi.repository.UserRepository;
+
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 
 @Service
 @RequiredArgsConstructor
@@ -127,7 +143,7 @@ public class ChatRoomService  implements IChatRoomService {
     }
 
     private ChatRoom getChatRoomById(Long roomId) {
-        return chatRoomRepository.findById(roomId)
+        return chatRoomRepository.findById(roomId.intValue())
                 .orElseThrow(() -> new NotFoundException("Chat room not found"));
     }
 

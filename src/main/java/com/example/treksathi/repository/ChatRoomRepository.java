@@ -13,7 +13,7 @@ import java.util.List;
 import java.util.Optional;
 
 @Repository
-public interface ChatRoomRepository extends JpaRepository<ChatRoom, Long> {
+public interface ChatRoomRepository extends JpaRepository<ChatRoom, Integer> {
 
     // Find chat room by associated Event (for event group chats)
     Optional<ChatRoom> findByEvent(Event event);
