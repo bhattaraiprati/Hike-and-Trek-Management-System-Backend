@@ -129,6 +129,14 @@ public class OrganizerEventService implements IOrganizerEventService {
         }
     }
 
+
+    public void cancelEventRegistration(int id) {
+        Event event = eventRepository.findById(id)
+                .orElseThrow(() -> new EventNotFoundException("Event not found with id: " + id));
+        event.setStatus(EventStatus.DELETED);
+        eventRepository.save(event);
+    }
+
     //     UPDATE - Update an existing event
 //     Only the organizer who created the event can update it
     @Transactional

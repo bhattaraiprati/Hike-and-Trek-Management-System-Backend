@@ -10,4 +10,5 @@ public interface IEventService {
     PaginatedResponseDTO<EventCardResponse> getAllEvents(int page, int size);
     EventResponseRecord getEventById(int id);
 
+
 }

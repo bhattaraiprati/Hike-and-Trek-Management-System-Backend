@@ -5,6 +5,7 @@ public enum EventStatus {
     ACTIVE,
     INACTIVE,
     COMPLETED,
-    CANCEL
+    CANCEL,
+    DELETED
 }
 
