@@ -51,6 +51,8 @@ public class EventController {
     }
 
 
+
+
     @GetMapping("/registration/success")
     public ResponseEntity<Void> handleEsewaSuccess(@RequestParam(value = "data", required = false) String data) {
         log.info("eSewa success callback received");

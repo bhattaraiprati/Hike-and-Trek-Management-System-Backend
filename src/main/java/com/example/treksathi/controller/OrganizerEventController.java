@@ -2,6 +2,7 @@ package com.example.treksathi.controller;
 
 import com.example.treksathi.Interfaces.IOrganizerEventService;
 import com.example.treksathi.dto.events.*;
+import com.example.treksathi.dto.organizer.StatusUpdateRequest;
 import com.example.treksathi.record.EventDetailsOrganizerRecord;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
@@ -21,6 +22,7 @@ import java.util.List;
 public class OrganizerEventController {
 
     private final IOrganizerEventService organizerEventService;
+
 
     // CREATE
     @PostMapping("/register-event")
@@ -49,6 +51,11 @@ public class OrganizerEventController {
                                                  ) {
         organizerEventService.markAttendance(eventId, attendance);
         return ResponseEntity.ok("Attendance marked successfully");
+    }
+    @DeleteMapping("/cancel/registration/{id}")
+    public ResponseEntity<Void> cancelEventRegistration(@PathVariable int id){
+        organizerEventService.cancelEventRegistration(id);
+        return ResponseEntity.noContent().build();
     }
 
     // Get the event by the Status
@@ -79,8 +86,9 @@ public class OrganizerEventController {
     @PatchMapping("/statusChange/{id}")
     public ResponseEntity<EventResponseDTO> updateEventStatus(
             @PathVariable int id,
-            @RequestParam String status) {
-        EventResponseDTO response = organizerEventService.updateEventStatus(id, status);
+            @RequestBody StatusUpdateRequest request) {  // New DTO for body
+
+        EventResponseDTO response = organizerEventService.updateEventStatus(id, request.getStatus());
         return ResponseEntity.ok(response);
     }
 

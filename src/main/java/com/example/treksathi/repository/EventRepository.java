@@ -15,7 +15,8 @@ import com.example.treksathi.record.EventCardResponse;
 
 public interface EventRepository extends JpaRepository<Event, Integer> {
 
-    List<Event> findByOrganizer(Organizer organizer);
+    @Query("SELECT e FROM Event e WHERE e.organizer = :organizer AND e.status <> com.example.treksathi.enums.EventStatus.DELETED")
+    List<Event> findByOrganizer(@Param("organizer") Organizer organizer);
 
     @Query("SELECT e from Event e"+
     " where e.status='ACTIVE'")
@@ -37,10 +38,8 @@ public interface EventRepository extends JpaRepository<Event, Integer> {
 
     @Query("SELECT COUNT(e) FROM Event e WHERE e.organizer.id = :organizerId AND e.status = :status AND e.date >= CURRENT_DATE")
     int countUpcomingEventsByOrganizerIdAndStatus(@Param("organizerId") int organizerId, @Param("status") EventStatus status);
-
     @Query("SELECT e FROM Event e WHERE e.organizer.id = :organizerId AND e.status = :status AND e.date >= CURRENT_DATE ORDER BY e.date ASC")
     List<Event> findUpcomingEventsByOrganizerId(@Param("organizerId") int organizerId, @Param("status") EventStatus status);
-
     @Query("SELECT new com.example.treksathi.record.EventCardResponse(" +
             "e.id, e.title, e.description, e.location, e.date, " +
             "e.durationDays, " +

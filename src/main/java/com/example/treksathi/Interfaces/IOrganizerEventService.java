@@ -16,6 +16,9 @@ public interface IOrganizerEventService {
 
     List<EventResponseDTO> getEventsByStatus(String status);
 
+
+    void cancelEventRegistration(int id);
+
     // UPDATE
     EventResponseDTO updateEvent(int id, EventCreateDTO eventCreateDTO);
 
