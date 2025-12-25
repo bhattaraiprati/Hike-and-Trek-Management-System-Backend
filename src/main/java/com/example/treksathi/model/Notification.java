@@ -17,6 +17,7 @@ public class Notification {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private int id;
 
+
     @ManyToOne
     @JoinColumn(name = "recipient_id", nullable = false)
     private User recipient;
@@ -24,11 +25,15 @@ public class Notification {
     @Enumerated(EnumType.STRING)
     private NotificationType type;
 
-    @Column(columnDefinition = "TEXT")
-    private String content;  // e.g., "New message in Event Y"
+    @Column(nullable = false)
+    private String title;
 
-    private boolean isRead;
+    @Column(nullable = false, length = 1000)
+    private String message;
 
+    private boolean isRead = false;
+
+    @Column(nullable = false)
     private LocalDateTime createdAt;
 
     @PrePersist

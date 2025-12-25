@@ -291,7 +291,7 @@ public class OrganizerService implements IOrganizerService {
         dto.setType(notification.getType() != null ? notification.getType().name() : "SYSTEM");
         
         // Extract title and message from content
-        String content = notification.getContent();
+        String content = notification.getMessage();
         if (content != null && content.contains(":")) {
             String[] parts = content.split(":", 2);
             dto.setTitle(parts[0].trim());

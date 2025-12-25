@@ -5,9 +5,12 @@ import com.example.treksathi.Interfaces.IPaymentGatewayService;
 import com.example.treksathi.dto.events.EventRegisterDTO;
 import com.example.treksathi.dto.pagination.PaginatedResponseDTO;
 import com.example.treksathi.model.EventRegistration;
+import com.example.treksathi.record.CreateNotificationRequest;
 import com.example.treksathi.record.EventCardResponse;
 import com.example.treksathi.record.EventResponseRecord;
+import com.example.treksathi.service.NotificationService;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import jakarta.persistence.criteria.CriteriaBuilder;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.ResponseEntity;
@@ -25,6 +28,7 @@ public class EventController {
     private final IEventService eventService;
 
     private final IPaymentGatewayService paymentGatewayService;
+    private final NotificationService notificationService;
 
     private static final String FRONTEND_URL = "http://localhost:5173";
 
@@ -59,6 +63,15 @@ public class EventController {
 
         try {
             EventRegistration registration = paymentGatewayService.verifyAndConfirmPayment(data);
+            notificationService.createAndSendNotification(
+                    registration.getUser().getId(),
+                    new CreateNotificationRequest(
+                            "Booking Confirmed",
+                            "Your booking for event '" + registration.getEvent().getTitle() + "' has been confirmed.",
+                            registration.getUser().getId(),
+                            "BOOKING_SUCCESS"
+                    )
+            );
             String redirectUrl = String.format(
                     "%s/hiker-dashboard/booking-confirmation/%d?status=success",
                     FRONTEND_URL, registration.getId()
