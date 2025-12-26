@@ -78,7 +78,7 @@ public class SecurityConfig {
                         .requestMatchers("/hiker/**").hasRole("HIKER")
 
                         // Multiple roles allowed
-                        .requestMatchers("/event/**", "/chat/**").hasAnyRole("ADMIN", "ORGANIZER", "HIKER")
+                        .requestMatchers("/event/**", "/chat/**", "/notifications/**").hasAnyRole("ADMIN", "ORGANIZER", "HIKER")
 
                         .anyRequest().authenticated())
                 .addFilterBefore(jwtAuthFilter, UsernamePasswordAuthenticationFilter.class)

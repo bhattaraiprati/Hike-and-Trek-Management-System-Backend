@@ -2,6 +2,11 @@ package com.example.treksathi.service;
 
 import java.util.List;
 
+import com.example.treksathi.model.*;
+import com.example.treksathi.repository.*;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -20,19 +25,6 @@ import com.example.treksathi.enums.Role;
 import com.example.treksathi.exception.InternalServerErrorException;
 import com.example.treksathi.exception.NotFoundException;
 import com.example.treksathi.exception.UserAlreadyExistException;
-import com.example.treksathi.model.Event;
-import com.example.treksathi.model.EventRegistration;
-import com.example.treksathi.model.Notification;
-import com.example.treksathi.model.Organizer;
-import com.example.treksathi.model.Reviews;
-import com.example.treksathi.model.User;
-import com.example.treksathi.repository.EventRegistrationRepository;
-import com.example.treksathi.repository.EventRepository;
-import com.example.treksathi.repository.NotificationRepository;
-import com.example.treksathi.repository.OrganizerRepository;
-import com.example.treksathi.repository.PaymentRepository;
-import com.example.treksathi.repository.ReviewRepository;
-import com.example.treksathi.repository.UserRepository;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -49,7 +41,7 @@ public class OrganizerService implements IOrganizerService {
     private final EventRegistrationRepository eventRegistrationRepository;
     private final ReviewRepository reviewRepository;
     private final PaymentRepository paymentRepository;
-    private final NotificationRepository notificationRepository;
+    private final NotificationRecipientRepository notificationRecipientRepository;
     private final PasswordEncoder passwordEncoder;
 
 
@@ -189,60 +181,66 @@ public class OrganizerService implements IOrganizerService {
     public OrganizerDashboardDTO getOrganizerDashboard(int userId) {
         Organizer organizer = organizerRepository.findByUserId(userId)
                 .orElseThrow(() -> new NotFoundException("Organizer not found for user id: " + userId));
-        
+
         int organizerId = organizer.getId();
-        
+
+        // Get the user for notifications
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new NotFoundException("User not found"));
+
         // Calculate stats
         OrganizerDashboardDTO.DashboardStats stats = new OrganizerDashboardDTO.DashboardStats();
         stats.setTotalEvents(eventRepository.countByOrganizerId(organizerId));
         stats.setTotalParticipants(eventRegistrationRepository.sumParticipantsByOrganizerId(organizerId));
-        
+
         // Count new reviews (reviews created in last 7 days)
         Long totalReviews = reviewRepository.countByOrganizerId(organizerId);
         stats.setNewReviews(totalReviews != null ? totalReviews.intValue() : 0);
-        
+
         // Calculate total earnings from successful payments
         Double totalEarnings = paymentRepository.sumTotalEarningsByOrganizerId(organizerId, PaymentStatus.SUCCESS);
         stats.setTotalEarnings(totalEarnings != null ? totalEarnings : 0.0);
-        
+
         // Get upcoming events (limit to 3)
         List<Event> upcomingEventsList = eventRepository.findUpcomingEventsByOrganizerId(organizerId, EventStatus.ACTIVE);
         List<OrganizerDashboardDTO.UpcomingEventDTO> upcomingEvents = upcomingEventsList.stream()
                 .limit(3)
                 .map(this::mapToUpcomingEventDTO)
                 .toList();
-        
+
         // Get recent registrations (limit to 5)
         List<EventRegistration> recentRegistrationsList = eventRegistrationRepository.findRecentRegistrationsByOrganizerId(organizerId);
         List<OrganizerDashboardDTO.RecentRegistrationDTO> recentRegistrations = recentRegistrationsList.stream()
                 .limit(5)
                 .map(this::mapToRecentRegistrationDTO)
                 .toList();
-        
+
         // Get recent reviews (limit to 2)
         List<Reviews> recentReviewsList = reviewRepository.findRecentReviewsByOrganizerId(organizerId);
         List<OrganizerDashboardDTO.ReviewDTO> reviews = recentReviewsList.stream()
                 .limit(2)
                 .map(this::mapToReviewDTO)
                 .toList();
-        
-        // Get notifications for the organizer's user
-        List<Notification> notificationsList = notificationRepository.findByRecipientIdOrderByCreatedAtDesc(userId);
+
+        // Get notifications for the organizer's user (FIXED)
+        Pageable limit = PageRequest.of(0, 3);
+        List<NotificationRecipient> notificationsList = notificationRecipientRepository
+                .findTop3ByUserIdOrderByCreatedAtDesc(userId, limit);
+
         List<OrganizerDashboardDTO.NotificationDTO> notifications = notificationsList.stream()
-                .limit(3)
-                .map(this::mapToNotificationDTO)
+                .map(recipient -> mapToNotificationDTO(recipient.getNotification(), recipient.isRead()))
                 .toList();
-        
+
         OrganizerDashboardDTO dashboardDTO = new OrganizerDashboardDTO();
         dashboardDTO.setStats(stats);
         dashboardDTO.setUpcomingEvents(upcomingEvents);
         dashboardDTO.setRecentRegistrations(recentRegistrations);
         dashboardDTO.setReviews(reviews);
         dashboardDTO.setNotifications(notifications);
-        
+
         return dashboardDTO;
     }
-    
+
     private OrganizerDashboardDTO.UpcomingEventDTO mapToUpcomingEventDTO(Event event) {
         OrganizerDashboardDTO.UpcomingEventDTO dto = new OrganizerDashboardDTO.UpcomingEventDTO();
         dto.setId(event.getId());
@@ -284,24 +282,17 @@ public class OrganizerService implements IOrganizerService {
         dto.setDate(review.getCreatedAt());
         return dto;
     }
-    
-    private OrganizerDashboardDTO.NotificationDTO mapToNotificationDTO(Notification notification) {
+
+    private OrganizerDashboardDTO.NotificationDTO mapToNotificationDTO(Notification notification, boolean isRead) {
         OrganizerDashboardDTO.NotificationDTO dto = new OrganizerDashboardDTO.NotificationDTO();
+
         dto.setId(notification.getId());
         dto.setType(notification.getType() != null ? notification.getType().name() : "SYSTEM");
-        
-        // Extract title and message from content
-        String content = notification.getContent();
-        if (content != null && content.contains(":")) {
-            String[] parts = content.split(":", 2);
-            dto.setTitle(parts[0].trim());
-            dto.setMessage(parts.length > 1 ? parts[1].trim() : content);
-        } else {
-            dto.setTitle("Notification");
-            dto.setMessage(content != null ? content : "");
-        }
-        
+        dto.setTitle(notification.getTitle() != null ? notification.getTitle().trim() : "Notification");
+        dto.setMessage(notification.getMessage() != null ? notification.getMessage() : "");
         dto.setTime(notification.getCreatedAt());
+        dto.setRead(isRead);
+
         return dto;
     }
 }
