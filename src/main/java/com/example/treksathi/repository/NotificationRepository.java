@@ -15,18 +15,6 @@ import com.example.treksathi.model.User;
 
 @Repository
 public interface NotificationRepository extends JpaRepository<Notification, Integer> {
-    
-    Page<Notification> findByRecipientOrderByCreatedAtDesc(User recipient, Pageable pageable);
-    
-    @Query("SELECT n FROM Notification n WHERE n.recipient.id = :userId ORDER BY n.createdAt DESC")
-    List<Notification> findByRecipientIdOrderByCreatedAtDesc(@Param("userId") int userId);
-    List<Notification> findByRecipientAndReadIsFalseOrderByCreatedAtDesc(User user);
-    
-    @Query("SELECT COUNT(n) FROM Notification n WHERE n.recipient.id = :userId AND n.isRead = false")
-    int countUnreadByRecipientId(@Param("userId") int userId);
 
-    @Modifying
-    @Query("UPDATE Notification n SET n.isRead = true WHERE n.recipient = :user AND n.isRead = false")
-    int markAllAsReadForUser(User user);
 }
 

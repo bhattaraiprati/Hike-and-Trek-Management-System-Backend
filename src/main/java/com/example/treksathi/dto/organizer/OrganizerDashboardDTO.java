@@ -54,7 +54,7 @@ public class OrganizerDashboardDTO {
         private String author;
         private LocalDateTime date;
     }
-    
+
     @Data
     public static class NotificationDTO {
         private int id;
@@ -62,6 +62,7 @@ public class OrganizerDashboardDTO {
         private String title;
         private String message;
         private LocalDateTime time;
+        private boolean read;
     }
 }
 

@@ -8,6 +8,8 @@ public record NotificationResponseDTO(
         String message,
         boolean isRead,
         NotificationType type,
-        String createdAt
+        String createdAt,
+        Integer referenceId,
+        String referenceType
 ) {
 }

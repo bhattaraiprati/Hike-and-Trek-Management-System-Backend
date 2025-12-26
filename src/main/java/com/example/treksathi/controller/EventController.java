@@ -4,6 +4,7 @@ import com.example.treksathi.Interfaces.IEventService;
 import com.example.treksathi.Interfaces.IPaymentGatewayService;
 import com.example.treksathi.dto.events.EventRegisterDTO;
 import com.example.treksathi.dto.pagination.PaginatedResponseDTO;
+import com.example.treksathi.enums.NotificationType;
 import com.example.treksathi.model.EventRegistration;
 import com.example.treksathi.record.CreateNotificationRequest;
 import com.example.treksathi.record.EventCardResponse;
@@ -68,8 +69,9 @@ public class EventController {
                     new CreateNotificationRequest(
                             "Booking Confirmed",
                             "Your booking for event '" + registration.getEvent().getTitle() + "' has been confirmed.",
-                            registration.getUser().getId(),
-                            "BOOKING_SUCCESS"
+                            NotificationType.BOOKING_CONFIRMATION.toString(),
+                            registration.getId(), // referenceId - registration ID
+                            "EVENT_REGISTRATION" // referenceType
                     )
             );
             String redirectUrl = String.format(

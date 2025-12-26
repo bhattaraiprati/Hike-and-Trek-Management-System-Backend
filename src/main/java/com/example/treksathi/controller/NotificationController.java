@@ -12,10 +12,11 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.List;
 import java.util.Map;
 
 @RestController
-@RequestMapping("/api/notifications")
+@RequestMapping("/notifications")
 @RequiredArgsConstructor
 public class NotificationController {
 
@@ -62,7 +63,7 @@ public class NotificationController {
         return ResponseEntity.ok().build();
     }
 
-    // Admin endpoint to send notifications
+    // Admin endpoint to send notification to single user
     @PostMapping("/send/{userId}")
     public ResponseEntity<NotificationResponseDTO> sendNotification(
             @PathVariable int userId,
@@ -71,8 +72,22 @@ public class NotificationController {
         return ResponseEntity.ok(notification);
     }
 
+    // Admin endpoint to broadcast notification to multiple users
+    @PostMapping("/broadcast")
+    public ResponseEntity<Map<String, String>> broadcastNotification(
+            @RequestBody BroadcastNotificationRequest request) {
+        notificationService.broadcastNotification(request.userIds(), request.notification());
+        return ResponseEntity.ok(Map.of("message", "Notification sent to " + request.userIds().size() + " users"));
+    }
+
     private User getUserFromAuth(Authentication authentication) {
         return userRepository.findByEmail(authentication.getName())
                 .orElseThrow(() -> new RuntimeException("User not found"));
     }
+
+    // Request DTO for broadcast
+    public record BroadcastNotificationRequest(
+            List<Integer> userIds,
+            CreateNotificationRequest notification
+    ) {}
 }
