@@ -6,6 +6,7 @@ import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
+import java.util.List;
 import java.util.Optional;
 
 public interface PaymentRepository extends JpaRepository<Payments,Integer> {
@@ -17,4 +18,6 @@ public interface PaymentRepository extends JpaRepository<Payments,Integer> {
             "JOIN er.event e " +
             "WHERE e.organizer.id = :organizerId AND p.paymentStatus = :status")
     Double sumTotalEarningsByOrganizerId(@Param("organizerId") int organizerId, @Param("status") PaymentStatus status);
+
+    List<Payments> findTop5ByEventRegistrationUserIdOrderByTransactionDateDesc(int userId);
 }

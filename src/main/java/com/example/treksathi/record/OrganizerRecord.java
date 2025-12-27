@@ -7,6 +7,7 @@ public record OrganizerRecord(
         String contactPerson,
         String phone,
         String about,
+        String profileImageUrl,
         String approvalStatus,
         boolean isVerified, // You can derive this from approval_status
         int totalEvents,

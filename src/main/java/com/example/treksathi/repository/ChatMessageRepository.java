@@ -38,4 +38,14 @@ public interface ChatMessageRepository extends JpaRepository<ChatMessage, Long> 
             "   WHERE rr.message.chatRoom = :chatRoom AND rr.user = :user" +
             ")")
     long countUnreadMessages(@Param("chatRoom") ChatRoom chatRoom, @Param("user") User user);
+
+    List<ChatMessage> findTop5ByChatRoomParticipantsContainingOrderByTimestampDesc(User user);
+
+    @Query("SELECT COUNT(cm) FROM ChatMessage cm " +
+            "JOIN cm.chatRoom cr " +
+            "JOIN cr.participants p " +
+            "WHERE p.id = :userId " +
+            "AND cm.sender.id != :userId " +
+            "AND NOT EXISTS (SELECT rr FROM ReadReceipt rr WHERE rr.message = cm AND rr.user.id = :userId)")
+    long countUnreadMessagesByUser(@Param("userId") int userId);
 }

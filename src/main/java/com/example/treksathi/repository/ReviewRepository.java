@@ -26,4 +26,11 @@ public interface ReviewRepository extends JpaRepository<Reviews, Integer> {
             "WHERE e.organizer.id = :organizerId " +
             "ORDER BY r.createdAt DESC")
     List<Reviews> findRecentReviewsByOrganizerId(@Param("organizerId") int organizerId);
+
+    List<Reviews> findTop5ByUserIdOrderByCreatedAtDesc(int userId);
+
+    @Query("SELECT AVG(r.rating) FROM Reviews r WHERE r.events.id = :eventId")
+    Double findAverageRatingByEventId(@Param("eventId") int eventId);
+
+    int countByEventsId(int eventId);
 }

@@ -74,6 +74,7 @@ public class EventService implements IEventService {
                 organizer.getContact_person(),
                 organizer.getPhone(),
                 organizer.getAbout(),
+                organizer.getUser().getProfileImage(),
                 organizer.getApproval_status().name(),
                 organizer.getApproval_status().name().equals("APPROVED"), // Assuming APPROVED means verified
                 totalEvents,
