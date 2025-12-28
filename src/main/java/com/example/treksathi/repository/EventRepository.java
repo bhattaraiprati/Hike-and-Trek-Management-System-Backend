@@ -1,5 +1,6 @@
 package com.example.treksathi.repository;
 
+import java.time.LocalDate;
 import java.util.List;
 
 import org.springframework.data.domain.Page;
@@ -59,4 +60,6 @@ public interface EventRepository extends JpaRepository<Event, Integer> {
             @Param("status") EventStatus status,
             Pageable pageable
     );
+
+    List<Event> findByDateAfterAndStatusOrderByDateAsc(LocalDate date, EventStatus status);
 }

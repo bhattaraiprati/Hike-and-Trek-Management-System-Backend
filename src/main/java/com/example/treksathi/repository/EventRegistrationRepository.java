@@ -1,5 +1,6 @@
 package com.example.treksathi.repository;
 
+import java.time.LocalDate;
 import java.util.List;
 import java.util.Optional;
 
@@ -56,4 +57,10 @@ import com.example.treksathi.record.UpcommingEventRecord;
                 "WHERE e.organizer.id = :organizerId " +
                 "ORDER BY er.registrationDate DESC")
         List<EventRegistration> findRecentRegistrationsByOrganizerId(@Param("organizerId") int organizerId);
+
+        List<EventRegistration> findByUserIdOrderByRegistrationDateDesc(int userId);
+        List<EventRegistration> findByUserIdAndEventDateAfterOrderByEventDateAsc(int userId, LocalDate date);
+        List<EventRegistration> findTop5ByUserIdOrderByRegistrationDateDesc(int userId);
+        int countByUserIdAndEventDateBeforeAndStatus(int userId, LocalDate date, EventRegistrationStatus status);
+        int countByEventId(int eventId);
      }

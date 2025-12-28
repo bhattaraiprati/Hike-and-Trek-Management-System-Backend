@@ -34,4 +34,6 @@ public interface NotificationRecipientRepository extends JpaRepository<Notificat
 
     @Query("SELECT nr FROM NotificationRecipient nr JOIN FETCH nr.notification WHERE nr.user = :user ORDER BY nr.notification.createdAt DESC")
     Page<NotificationRecipient> findByUserWithNotification(@Param("user") User user, Pageable pageable);
+
+    long countByUserIdAndIsReadFalse(int userId);
 }
