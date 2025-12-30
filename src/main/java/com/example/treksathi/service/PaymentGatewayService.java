@@ -1,9 +1,12 @@
 package com.example.treksathi.service;
 
 import com.example.treksathi.Interfaces.IPaymentGatewayService;
+import com.example.treksathi.Interfaces.IStripePaymentService;
 import com.example.treksathi.dto.events.EsewaStatusResponse;
 import com.example.treksathi.dto.events.EventRegisterDTO;
+import com.example.treksathi.dto.payments.StripePaymentResponse;
 import com.example.treksathi.enums.EventRegistrationStatus;
+import com.example.treksathi.enums.PaymentMethod;
 import com.example.treksathi.enums.PaymentStatus;
 import com.example.treksathi.exception.EventNotFoundException;
 import com.example.treksathi.exception.NotFoundException;
@@ -15,6 +18,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.context.annotation.Lazy;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.client.RestTemplate;
@@ -41,6 +45,8 @@ public class PaymentGatewayService  implements IPaymentGatewayService {
     private final UserRepository userRepository;
     private final PaymentRepository paymentsRepository;
     private final EventParticipantsRepository eventParticipantsRepository;
+    @Lazy
+    private final IStripePaymentService stripePaymentService;
     private final RestTemplate restTemplate;
 
     @Transactional
@@ -72,6 +78,14 @@ public class PaymentGatewayService  implements IPaymentGatewayService {
 
         log.info("eSewa payment request payload: {}", paymentRequest);
         return paymentRequest;
+    }
+
+    @Override
+    @Transactional
+    public StripePaymentResponse initiateStripePayment(EventRegisterDTO eventRegisterDTO) throws Exception {
+        log.info("Initiating Stripe payment for user: {}", eventRegisterDTO.getUserId());
+        eventRegisterDTO.setMethod(PaymentMethod.STRIPE);
+        return stripePaymentService.createCheckoutSession(eventRegisterDTO);
     }
 
     @Transactional
