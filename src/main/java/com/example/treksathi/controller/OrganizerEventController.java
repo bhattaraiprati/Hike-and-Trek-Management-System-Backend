@@ -4,6 +4,7 @@ import com.example.treksathi.Interfaces.IOrganizerEventService;
 import com.example.treksathi.dto.events.*;
 import com.example.treksathi.dto.organizer.StatusUpdateRequest;
 import com.example.treksathi.record.EventDetailsOrganizerRecord;
+import com.example.treksathi.service.VectorService;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -28,6 +29,7 @@ public class OrganizerEventController {
     @PostMapping("/register-event")
     public ResponseEntity<EventResponseDTO> registerEvent(@Valid @RequestBody EventCreateDTO eventCreateDTO) {
         EventResponseDTO response = organizerEventService.createNewEvent(eventCreateDTO);
+
         return new ResponseEntity<>(response, HttpStatus.CREATED);
     }
 

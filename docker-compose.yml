@@ -1,0 +1,102 @@
+version: '3.8'
+
+services:
+#  postgres:
+#    image: postgres:16-alpine
+#    container_name: treksathi-postgres
+#    environment:
+#      POSTGRES_DB: "Trek-Sathi"
+#      POSTGRES_USER: postgres
+#      POSTGRES_PASSWORD: pratik
+#    ports:
+#      - "5432:5432"
+#    volumes:
+#      - postgres_data:/var/lib/postgresql/data
+#    networks:
+#      - treksathi-network
+#    healthcheck:
+#      test: ["CMD-SHELL", "pg_isready -U postgres"]
+#      interval: 10s
+#      timeout: 5s
+#      retries: 5
+
+  qdrant:
+    image: qdrant/qdrant:v1.12.0   # stick with stable, avoid :dev if possible
+    container_name: treksathi-qdrant
+    ports:
+      - "6333:6333"     # dashboard / REST
+      - "6334:6334"
+    volumes:
+      - qdrant_data:/qdrant/storage
+    networks:
+      - treksathi-network
+    healthcheck:
+      test: [ "CMD-SHELL", "timeout 1 bash -c 'cat < /dev/null > /dev/tcp/127.0.0.1/6333' || exit 1" ]
+      # Alternative syntax (more compatible):
+      # test: ["CMD-SHELL", "[ -e /dev/tcp/127.0.0.1/6333 ] || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 30s          # ← crucial: gives Qdrant time to start listening
+
+  # ── Uncomment this block when you're ready to add Ollama ─────────────────────
+  ollama:
+    image: ollama/ollama:latest
+    container_name: treksathi-ollama
+    ports:
+      - "11434:11434"
+    volumes:
+      - ollama_data:/root/.ollama
+    healthcheck:
+      test: [ "CMD", "ollama", "list" ]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+    networks:
+      - treksathi-network                # give time to start
+
+           # ← key line! Use service name
+  # ──────────────────────────────────────────────────────────────────────────────
+
+  backend:
+    image: maven:3.9-eclipse-temurin-21-alpine
+    container_name: treksathi-backend
+    working_dir: /app
+    ports:
+      - "8080:8080"
+      - "5005:5005"     # JDWP debug
+      - "35729:35729"   # LiveReload
+    volumes:
+      - .:/app
+      - ~/.m2:/root/.m2
+      - /app/target     # prevent host target pollution
+    env_file:
+      - .env
+    command: >
+      sh -c "
+        echo 'Installing dependencies...' &&
+        mvn dependency:go-offline -B &&
+        echo 'Starting Spring Boot with remote debug...' &&
+        mvn spring-boot:run -Dspring-boot.run.jvmArguments='-agentlib:jdwp=transport=dt_socket,server=y,suspend=n,address=*:5005'
+      "
+    depends_on:
+#      postgres:
+#        condition: service_healthy
+      qdrant:
+        condition: service_healthy
+      ollama:           # ← uncomment later
+         condition: service_healthy
+    networks:
+      - treksathi-network
+    stdin_open: true
+    tty: true
+
+volumes:
+#  postgres_data:
+  qdrant_data:
+  ollama_data:        # ← uncomment when activating ollama
+
+networks:
+  treksathi-network:
+    driver: bridge

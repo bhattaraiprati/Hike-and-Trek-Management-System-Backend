@@ -55,9 +55,6 @@ public class EventController {
         return ResponseEntity.ok(paymentRequest);
     }
 
-
-
-
     @GetMapping("/registration/success")
     public ResponseEntity<Void> handleEsewaSuccess(@RequestParam(value = "data", required = false) String data) {
         log.info("eSewa success callback received");

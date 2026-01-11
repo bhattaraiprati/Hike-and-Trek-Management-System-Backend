@@ -35,6 +35,8 @@ public record EventRegistrationResponse(
             String difficultyLevel,
             double price,
             String bannerImageUrl,
+            List<String> includedServices,
+            List<String> requirements,
             String meetingPoint,
             LocalTime meetingTime,
             OrganizerInfo organizer

@@ -28,10 +28,14 @@
                     event.getDifficultyLevel().name(),
                     event.getPrice(),
                     event.getBannerImageUrl(),
+                    event.getIncludedServices(),
+                    event.getRequirements(),
                     event.getMeetingPoint(),
                     event.getMeetingTime(),
                     new BookingResponseRecord.OrganizerInfo(
-                            organizer.getOrganization_name()
+                            organizer.getOrganization_name(),
+                            organizer.getPhone()
+
 
                     )
             );
@@ -55,6 +59,8 @@
             return new BookingResponseRecord(
                     reg.getId(),
                     reg.getRegistrationDate(),
+                    reg.getContactName(),
+                    reg.getContact(),
                     eventDetails,
                     List.of(participantDetails),  // List with single object containing count
                     paymentDetails

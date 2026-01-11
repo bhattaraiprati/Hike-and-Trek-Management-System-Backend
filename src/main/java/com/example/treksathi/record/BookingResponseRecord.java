@@ -11,6 +11,9 @@ public record BookingResponseRecord(
         int bookingId,
         LocalDateTime bookingDate,
 
+        String contactName,
+        String contactPhone,
+
         EventDetails event,
 
         List<ParticipantDetails> participants,
@@ -28,13 +31,16 @@ public record BookingResponseRecord(
             String difficultyLevel,
             double price,
             String bannerImageUrl,
+            List<String> includedServices,
+            List<String> requirements,
             String meetingPoint,
             LocalTime meetingTime,
-            BookingResponseRecord.OrganizerInfo organizer
+            OrganizerInfo organizer
     ) {}
 
     public record OrganizerInfo(
-            String name
+            String name,
+            String phone
     ) {}
 
     public record ParticipantDetails(
