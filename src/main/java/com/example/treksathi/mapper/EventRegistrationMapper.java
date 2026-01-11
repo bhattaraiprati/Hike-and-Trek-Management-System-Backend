@@ -31,6 +31,8 @@ public class EventRegistrationMapper {
                 event.getDifficultyLevel().name(),
                 event.getPrice(),
                 event.getBannerImageUrl(),
+                event.getIncludedServices(),
+                event.getRequirements(),
                 event.getMeetingPoint(),
                 event.getMeetingTime(),
                 new EventRegistrationResponse.OrganizerInfo(

@@ -63,4 +63,5 @@ import com.example.treksathi.record.UpcommingEventRecord;
         List<EventRegistration> findTop5ByUserIdOrderByRegistrationDateDesc(int userId);
         int countByUserIdAndEventDateBeforeAndStatus(int userId, LocalDate date, EventRegistrationStatus status);
         int countByEventId(int eventId);
+        List<EventRegistration> findByUserIdAndEventStatus(int userId, EventStatus status);
      }

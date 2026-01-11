@@ -6,6 +6,7 @@ import java.util.List;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.JpaSpecificationExecutor;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
@@ -14,7 +15,7 @@ import com.example.treksathi.model.Event;
 import com.example.treksathi.model.Organizer;
 import com.example.treksathi.record.EventCardResponse;
 
-public interface EventRepository extends JpaRepository<Event, Integer> {
+public interface EventRepository extends JpaRepository<Event, Integer>, JpaSpecificationExecutor<Event> {
 
     @Query("SELECT e FROM Event e WHERE e.organizer = :organizer AND e.status <> com.example.treksathi.enums.EventStatus.DELETED")
     List<Event> findByOrganizer(@Param("organizer") Organizer organizer);

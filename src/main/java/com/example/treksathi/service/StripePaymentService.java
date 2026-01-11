@@ -1,6 +1,5 @@
 package com.example.treksathi.service;
 
-import com.example.treksathi.Interfaces.IPaymentGatewayService;
 import com.example.treksathi.Interfaces.IStripePaymentService;
 import com.example.treksathi.dto.events.EventRegisterDTO;
 import com.example.treksathi.dto.payments.StripePaymentResponse;

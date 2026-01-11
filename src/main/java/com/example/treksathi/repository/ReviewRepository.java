@@ -33,4 +33,5 @@ public interface ReviewRepository extends JpaRepository<Reviews, Integer> {
     Double findAverageRatingByEventId(@Param("eventId") int eventId);
 
     int countByEventsId(int eventId);
+    int countByUserIdAndEventsId(int userId, int eventId);
 }

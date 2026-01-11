@@ -5,7 +5,6 @@ import com.example.treksathi.exception.InternalServerErrorException;
 import com.example.treksathi.exception.UsernameNotFoundException;
 import com.example.treksathi.model.RefreshToken;
 import com.example.treksathi.model.User;
-import com.example.treksathi.record.BookingResponseRecord;
 import com.example.treksathi.repository.RefreshTokenRepository;
 import com.example.treksathi.repository.UserRepository;
 import lombok.RequiredArgsConstructor;

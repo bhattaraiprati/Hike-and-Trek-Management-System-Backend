@@ -36,6 +36,7 @@ public class OrganizerEventService implements IOrganizerEventService {
     private final OrganizerRepository organizerRepository;
     private final EventResponseMapper eventResponseMapper;
     private final IEmailSendService emailSendService;
+    private final VectorService vectorService;
     private final DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
 
     @Transactional
@@ -56,6 +57,7 @@ public class OrganizerEventService implements IOrganizerEventService {
         event.setUpdatedAt(LocalDateTime.now());
 
         Event savedEvent = eventRepository.save(event);
+        vectorService.addToVectorStore(savedEvent);
 
         return mapEntityToDto(savedEvent);
     }
@@ -134,6 +136,7 @@ public class OrganizerEventService implements IOrganizerEventService {
         Event event = eventRepository.findById(id)
                 .orElseThrow(() -> new EventNotFoundException("Event not found with id: " + id));
         event.setStatus(EventStatus.DELETED);
+        vectorService.deleteFromVectorStore(event.getId());
         eventRepository.save(event);
     }
 
@@ -145,7 +148,7 @@ public class OrganizerEventService implements IOrganizerEventService {
                 .orElseThrow(() -> new EventNotFoundException("Event not found with id: " + id));
         User user = getAuthenticatedOrganizer();
         Organizer authenticatedOrganizer = organizerRepository.findByUser(user);
-
+//        vectorService.deleteFromVectorStore(event.getId());
 
         if (event.getOrganizer().getId() != authenticatedOrganizer.getId()) {
             throw new UnauthorizedException("You are not authorized to update this event");
@@ -155,6 +158,7 @@ public class OrganizerEventService implements IOrganizerEventService {
         event.setUpdatedAt(LocalDateTime.now());
 
         Event updatedEvent = eventRepository.save(event);
+        vectorService.addToVectorStore(updatedEvent);
         return mapEntityToDto(updatedEvent);
     }
 
@@ -164,13 +168,14 @@ public class OrganizerEventService implements IOrganizerEventService {
     public EventResponseDTO updateEventStatus(int id, String status) {
         Event event = eventRepository.findById(id)
                 .orElseThrow(() -> new EventNotFoundException("Event not found with id: " + id));
-
+        vectorService.deleteFromVectorStore(event.getId());
         try {
             EventStatus eventStatus = EventStatus.valueOf(status.toUpperCase());
             event.setStatus(eventStatus);
             event.setUpdatedAt(LocalDateTime.now());
 
             Event updatedEvent = eventRepository.save(event);
+            vectorService.addToVectorStore(updatedEvent);
             return mapEntityToDto(updatedEvent);
         } catch (IllegalArgumentException e) {
             throw new InvalidCredentialsException("Invalid status: " + status + ". Valid statuses are: PENDING, APPROVED, REJECTED, CANCELLED, COMPLETED");

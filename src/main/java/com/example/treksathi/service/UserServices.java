@@ -95,7 +95,7 @@ public class UserServices implements IUserServices {
         try {
 
             Optional<User> userOpt = userRepository.findByEmail(userCreateDTO.getEmail());
-
+            log.info("Here is the user info"+ userOpt);
             if (userOpt.isEmpty()) {
                 throw new UsernameNotFoundException("User not found with email: " + userCreateDTO.getEmail());
             }
