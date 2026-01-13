@@ -25,6 +25,7 @@ public class SearchCriteria {
     private Integer minDuration;
     private Integer maxDuration;
     private String location;
+    private String eventStatus;
 
     // Organizer filter
     private String organizerName;

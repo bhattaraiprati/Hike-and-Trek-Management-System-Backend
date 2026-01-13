@@ -5,19 +5,42 @@ import com.example.treksathi.enums.EventStatus;
 import com.example.treksathi.model.Event;
 import com.example.treksathi.model.Organizer;
 import jakarta.persistence.criteria.*;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.jpa.domain.Specification;
 
 import java.util.ArrayList;
 import java.util.List;
 
+@Slf4j
 public class EventSearchSpecification {
 
     public static Specification<Event> searchEvents(SearchCriteria criteria) {
         return (root, query, criteriaBuilder) -> {
             List<Predicate> predicates = new ArrayList<>();
 
-            // Only active events
-            predicates.add(criteriaBuilder.equal(root.get("status"), EventStatus.ACTIVE));
+            // ── Status handling ───────────────────────────────────────────────
+            if (criteria.getOrganizerId() != null) {
+                // Organizer viewing their own events
+                if (criteria.getEventStatus() != null && !criteria.getEventStatus().isBlank()) {
+                    try {
+                        EventStatus status = EventStatus.valueOf(criteria.getEventStatus().toUpperCase());
+                        log.info("Applying specific status filter: {}", status);
+                        predicates.add(criteriaBuilder.equal(root.get("status"), status));
+                    } catch (IllegalArgumentException e) {
+                        log.warn("Invalid eventStatus provided: {}, ignoring filter", criteria.getEventStatus());
+                        // Optional: you can throw BadRequestException here if you want strict validation
+                    }
+                } else {
+                    // Default: show everything except DELETED (good for "all")
+                    log.info("No specific status → showing all except DELETED");
+                    predicates.add(criteriaBuilder.notEqual(root.get("status"), EventStatus.DELETED));
+                }
+            } else {
+                // Public search (no organizerId) → only ACTIVE
+                log.info("Public search → only ACTIVE events");
+                predicates.add(criteriaBuilder.equal(root.get("status"), EventStatus.ACTIVE));
+            }
+
 
             // Text search in title, description, location
             if (criteria.getQuery() != null && !criteria.getQuery().trim().isEmpty()) {

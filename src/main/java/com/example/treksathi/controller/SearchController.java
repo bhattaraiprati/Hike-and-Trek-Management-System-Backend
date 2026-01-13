@@ -2,21 +2,30 @@ package com.example.treksathi.controller;
 
 import com.example.treksathi.Interfaces.ISearchService;
 import com.example.treksathi.dto.search.*;
+import com.example.treksathi.enums.EventStatus;
+import com.example.treksathi.exception.UsernameNotFoundException;
+import com.example.treksathi.model.Organizer;
+import com.example.treksathi.model.User;
+import com.example.treksathi.repository.OrganizerRepository;
+import com.example.treksathi.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 
 @RestController
-@RequestMapping("/hiker/search")
+@RequestMapping("/search")
 @RequiredArgsConstructor
 @Slf4j
 @CrossOrigin(origins = "*")
 public class SearchController {
 
     private final ISearchService searchService;
+    private final UserRepository userRepository;
+    private final OrganizerRepository organizerRepository;
 
     /**
      * Main search endpoint
@@ -26,6 +35,7 @@ public class SearchController {
     public ResponseEntity<SearchResponse> search(
             @RequestParam(required = false) String query,
             @RequestParam(required = false) String difficultyLevel,
+            @RequestParam(required = false) String eventStatus,
             @RequestParam(required = false) Double minPrice,
             @RequestParam(required = false) Double maxPrice,
             @RequestParam(required = false) String startDate,
@@ -38,14 +48,26 @@ public class SearchController {
             @RequestParam(defaultValue = "0") Integer page,
             @RequestParam(defaultValue = "10") Integer size,
             @RequestParam(defaultValue = "date") String sortBy,
-            @RequestParam(defaultValue = "ASC") String sortDirection
+            @RequestParam(defaultValue = "ASC") String sortDirection,
+            Authentication authentication
+
     ) {
         log.info("Search request - query: {}, page: {}", query, page);
+
+        String username = authentication.getName();
+        User currentUser = userRepository.findByEmail(username)
+                .orElseThrow(() -> new UsernameNotFoundException("User not found"));
+
+        // 2. Find organizer linked to this user
+        Organizer organizer = organizerRepository.findByUser(currentUser);
+//                .orElseThrow(() -> new RuntimeException("No organizer profile found for this user"));
 
         SearchCriteria criteria = SearchCriteria.builder()
                 .query(query)
                 .difficultyLevel(difficultyLevel != null ?
                         com.example.treksathi.enums.DifficultyLevel.valueOf(difficultyLevel) : null)
+                .eventStatus(eventStatus != null ?
+                        String.valueOf(EventStatus.valueOf(eventStatus.toUpperCase())) : null)
                 .minPrice(minPrice)
                 .maxPrice(maxPrice)
                 .startDate(startDate != null ? java.time.LocalDate.parse(startDate) : null)
@@ -54,7 +76,7 @@ public class SearchController {
                 .maxDuration(maxDuration)
                 .location(location)
                 .organizerName(organizerName)
-                .organizerId(organizerId)
+                .organizerId(organizer.getId())
                 .page(page)
                 .size(size)
                 .sortBy(sortBy)

@@ -71,6 +71,16 @@ public class EventController {
                             "EVENT_REGISTRATION" // referenceType
                     )
             );
+            notificationService.createAndSendNotification(
+                    registration.getEvent().getOrganizer().getUser().getId(),
+                    new CreateNotificationRequest(
+                            "Booking Confirmed",
+                            "New participant for event '" + registration.getContactName() + "' has booked event '"+ registration.getEvent().getTitle() +"' Successfully",
+                            NotificationType.BOOKING_CONFIRMATION.toString(),
+                            registration.getId(), // referenceId - registration ID
+                            "EVENT_REGISTRATION" // referenceType
+                    )
+            );
             String redirectUrl = String.format(
                     "%s/hiker-dashboard/booking-confirmation/%d?status=success",
                     FRONTEND_URL, registration.getId()
