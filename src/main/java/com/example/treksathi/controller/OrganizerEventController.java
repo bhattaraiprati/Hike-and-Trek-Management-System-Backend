@@ -4,8 +4,10 @@ import com.example.treksathi.Interfaces.IOrganizerEventService;
 import com.example.treksathi.dto.events.*;
 import com.example.treksathi.dto.organizer.StatusUpdateRequest;
 import com.example.treksathi.record.EventDetailsOrganizerRecord;
+import com.example.treksathi.service.OrganizerEventService;
 import com.example.treksathi.service.VectorService;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import jakarta.transaction.Transactional;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
@@ -47,6 +49,41 @@ public class OrganizerEventController {
         EventDetailsOrganizerRecord events = organizerEventService.getAllEventsDetails(eventId, userDetails);
         return ResponseEntity.ok(events);
     }
+
+    /**
+     * Get all events created by the current authenticated organizer
+     * GET /api/organizer/events?status=PENDING&search=annapurna&page=0&size=10
+     */
+//    @GetMapping
+//    public ResponseEntity<Page<EventDTO>> getMyEvents(
+//            @RequestParam(required = false) String status,
+//            @RequestParam(required = false) String search,
+//            @RequestParam(required = false) String difficultyLevel,
+//            @RequestParam(defaultValue = "0") int page,
+//            @RequestParam(defaultValue = "10") int size,
+//            @RequestParam(defaultValue = "createdAt") String sortBy,
+//            @RequestParam(defaultValue = "DESC") String sortDir
+//    ) {
+//        Long organizerId = authFacade.getCurrentUserId(); // ← very important!
+//
+//        EventFilterCriteria criteria = EventFilterCriteria.builder()
+//                .organizerId(organizerId)
+//                .search(search)
+//                .status(status != null ? EventStatus.valueOf(status.toUpperCase()) : null)
+//                .difficultyLevel(difficultyLevel != null ?
+//                        DifficultyLevel.valueOf(difficultyLevel.toUpperCase()) : null)
+//                .page(page)
+//                .size(size)
+//                .sortBy(sortBy)
+//                .sortDirection(sortDir)
+//                .build();
+//
+//        Page<Event> eventsPage = organizerEventService.findOrganizerEvents(criteria);
+//
+//        Page<EventDTO> dtoPage = eventsPage.map(this::convertToDTO);
+//
+//        return ResponseEntity.ok(dtoPage);
+//    }
 
     @PostMapping("makeAttendance/{eventId}")
     public ResponseEntity<String> makeAttendance(@PathVariable int eventId, @RequestBody List<ParticipantsAttendanceDTO> attendance

@@ -5,12 +5,14 @@ import com.example.treksathi.Interfaces.IOrganizerEventService;
 import com.example.treksathi.dto.events.*;
 import com.example.treksathi.enums.DifficultyLevel;
 import com.example.treksathi.enums.EventStatus;
+import com.example.treksathi.enums.NotificationType;
 import com.example.treksathi.exception.*;
 import com.example.treksathi.mapper.EventResponseMapper;
 import com.example.treksathi.model.Event;
 import com.example.treksathi.model.EventRegistration;
 import com.example.treksathi.model.Organizer;
 import com.example.treksathi.model.User;
+import com.example.treksathi.record.CreateNotificationRequest;
 import com.example.treksathi.record.EventDetailsOrganizerRecord;
 import com.example.treksathi.repository.EventRepository;
 import com.example.treksathi.repository.OrganizerRepository;
@@ -37,6 +39,7 @@ public class OrganizerEventService implements IOrganizerEventService {
     private final EventResponseMapper eventResponseMapper;
     private final IEmailSendService emailSendService;
     private final VectorService vectorService;
+    private final NotificationService notificationService;
     private final DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
 
     @Transactional
@@ -58,6 +61,16 @@ public class OrganizerEventService implements IOrganizerEventService {
 
         Event savedEvent = eventRepository.save(event);
         vectorService.addToVectorStore(savedEvent);
+        notificationService.createAndSendNotification(
+                savedEvent.getOrganizer().getUser().getId(),
+                new CreateNotificationRequest(
+                        "Booking Confirmed",
+                        "New event has been Created with tittle '" + savedEvent.getTitle() + "' has been register",
+                        NotificationType.GENERAL.toString(),
+                        savedEvent.getId(), // referenceId - registration ID
+                        "EVENT_REGISTRATION" // referenceType
+                )
+        );
 
         return mapEntityToDto(savedEvent);
     }
@@ -148,8 +161,7 @@ public class OrganizerEventService implements IOrganizerEventService {
                 .orElseThrow(() -> new EventNotFoundException("Event not found with id: " + id));
         User user = getAuthenticatedOrganizer();
         Organizer authenticatedOrganizer = organizerRepository.findByUser(user);
-//        vectorService.deleteFromVectorStore(event.getId());
-
+        vectorService.deleteFromVectorStore(event.getId());
         if (event.getOrganizer().getId() != authenticatedOrganizer.getId()) {
             throw new UnauthorizedException("You are not authorized to update this event");
         }
@@ -159,6 +171,32 @@ public class OrganizerEventService implements IOrganizerEventService {
 
         Event updatedEvent = eventRepository.save(event);
         vectorService.addToVectorStore(updatedEvent);
+        notificationService.createAndSendNotification(
+                event.getOrganizer().getUser().getId(),
+                new CreateNotificationRequest(
+                        "Event Updated",
+                        "Event has been updated with tittle '" + event.getTitle() + "' successfully",
+                        NotificationType.GENERAL.toString(),
+                        event.getId(), // referenceId - registration ID
+                        "EVENT_UPDATED" // referenceType
+                )
+        );
+        notificationService.broadcastNotification(
+                event.getEventRegistration().stream()
+                        .map(EventRegistration::getUser)
+                        .filter(java.util.Objects::nonNull)
+                        .map(User::getId)
+                        .collect(Collectors.toList()),
+                new CreateNotificationRequest(
+                        "Event Updated",
+                        "Event has been updated with tittle '" + event.getTitle() + "' successfully",
+                        NotificationType.GENERAL.toString(),
+                        event.getId(),
+                        "EVENT_UPDATED"
+                )
+        );
+
+
         return mapEntityToDto(updatedEvent);
     }
 
