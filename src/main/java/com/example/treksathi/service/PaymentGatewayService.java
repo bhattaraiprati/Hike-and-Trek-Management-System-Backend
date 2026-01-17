@@ -29,7 +29,7 @@ import java.util.*;
 @Service
 @RequiredArgsConstructor
 @Slf4j
-public class PaymentGatewayService  implements IPaymentGatewayService {
+public class PaymentGatewayService implements IPaymentGatewayService {
 
     @Value("${ESEWA.GATEWAY.URL}")
     private String ESEWA_GATEWAY_URL;
@@ -73,8 +73,7 @@ public class PaymentGatewayService  implements IPaymentGatewayService {
                 FAILURE_URL,
                 signedFieldNames,
                 signature,
-                eventRegistration.getId()
-        );
+                eventRegistration.getId());
 
         log.info("eSewa payment request payload: {}", paymentRequest);
         return paymentRequest;
@@ -92,7 +91,8 @@ public class PaymentGatewayService  implements IPaymentGatewayService {
     public EventRegistration createEvent(EventRegisterDTO eventRegisterDTO) {
         // Fetch Event and User entities
         Event event = eventRepository.findById(eventRegisterDTO.getEventId())
-                .orElseThrow(() -> new EventNotFoundException("Event not found with id: " + eventRegisterDTO.getEventId()));
+                .orElseThrow(
+                        () -> new EventNotFoundException("Event not found with id: " + eventRegisterDTO.getEventId()));
 
         User user = userRepository.findById(eventRegisterDTO.getUserId())
                 .orElseThrow(() -> new NotFoundException("User not found with id: " + eventRegisterDTO.getUserId()));
@@ -133,7 +133,8 @@ public class PaymentGatewayService  implements IPaymentGatewayService {
             participants.add(participant);
         }
         eventParticipantsRepository.saveAll(participants);
-        log.info("Created {} participants for EventRegistration ID: {}", participants.size(), eventRegistration.getId());
+        log.info("Created {} participants for EventRegistration ID: {}", participants.size(),
+                eventRegistration.getId());
 
         eventRegistration.setEventParticipants(participants);
         return eventRegistration;
@@ -169,8 +170,7 @@ public class PaymentGatewayService  implements IPaymentGatewayService {
 
             // 3. Verify Signature (Security Check)
             String expectedSignature = SignatureUtil.generateSignature(
-                    transactionCode, status, totalAmount, transactionUuid, productCode, signedFieldNames
-            );
+                    transactionCode, status, totalAmount, transactionUuid, productCode, signedFieldNames);
 
             if (!receivedSignature.equals(expectedSignature)) {
                 log.error("Signature mismatch! Received: {}, Expected: {}", receivedSignature, expectedSignature);
@@ -192,6 +192,15 @@ public class PaymentGatewayService  implements IPaymentGatewayService {
 
             payment.setTransactionReference(transactionCode);
             payment.setPaymentStatus(PaymentStatus.SUCCESS);
+
+            // Calculate Commission (10%)
+            double amount = payment.getAmount() != null ? payment.getAmount() : 0.0;
+            double fee = amount * 0.10;
+            double netAmount = amount - fee;
+
+            payment.setFee(fee);
+            payment.setNetAmount(netAmount);
+
             paymentsRepository.save(payment);
 
             registration.setStatus(EventRegistrationStatus.SUCCESS);
@@ -211,8 +220,7 @@ public class PaymentGatewayService  implements IPaymentGatewayService {
                 "%s/api/epay/transaction/status/?product_code=%s&total_amount=%s&transaction_uuid=%s",
                 ESEWA_GATEWAY_URL, productCode,
                 String.format("%.2f", Double.parseDouble(totalAmount)),
-                transactionUuid
-        );
+                transactionUuid);
 
         try {
             EsewaStatusResponse response = restTemplate.getForObject(url, EsewaStatusResponse.class);

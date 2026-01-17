@@ -42,7 +42,8 @@ public class OrganizerPaymentService implements IOrganizerPaymentService {
 
     @Override
     public PaymentDashboardDTO getPaymentDashboard(Integer userId, PaymentFilterDTO filters) {
-        // The incoming organizerId from the frontend is the userId; fetch the organizer and
+        // The incoming organizerId from the frontend is the userId; fetch the organizer
+        // and
         // use the organizer entity id for payment/event queries.
         Organizer organizer = organizerRepository.findByUserId(userId)
                 .orElseThrow(() -> new NotFoundException("Organizer not found with id: " + userId));
@@ -50,8 +51,9 @@ public class OrganizerPaymentService implements IOrganizerPaymentService {
 
         log.info("Building dashboard for organizer: {}, filters: {}", userId, filters);
 
-        // Get all payments for this organizer with filters
-        List<Payments> allPayments = getFilteredPayments(organizerEntityId, filters);
+        // Get all payments for this organizer with filters (unpaginated for
+        // summary/charts)
+        List<Payments> allPayments = getFilteredPaymentsList(organizerEntityId, filters);
 
         log.info("Found {} filtered payments", allPayments.size());
 
@@ -61,13 +63,10 @@ public class OrganizerPaymentService implements IOrganizerPaymentService {
         // Build event payments
         List<EventPaymentDTO> eventPayments = buildEventPayments(userId, filters);
 
-        // Build participant payments
-        List<ParticipantPaymentDTO> participantPayments = buildParticipantPayments(allPayments);
-
-        // Get recent payments (last 10)
-        List<ParticipantPaymentDTO> recentPayments = participantPayments.stream()
+        // Build participant payments (Recent 5 only for dashboard)
+        List<ParticipantPaymentDTO> recentPayments = buildParticipantPayments(allPayments).stream()
                 .sorted((a, b) -> b.getPaymentDate().compareTo(a.getPaymentDate()))
-                .limit(10)
+                .limit(5)
                 .collect(Collectors.toList());
 
         // Build revenue chart (last 6 months)
@@ -76,13 +75,110 @@ public class OrganizerPaymentService implements IOrganizerPaymentService {
         return PaymentDashboardDTO.builder()
                 .summary(summary)
                 .events(eventPayments)
-                .participantPayments(participantPayments)
+                .participantPayments(recentPayments) // Renaming/Using recentPayments for dashboard view
                 .recentPayments(recentPayments)
                 .revenueChart(revenueChart)
                 .build();
     }
 
-    private List<Payments> getFilteredPayments(Integer organizerId, PaymentFilterDTO filters) {
+    @Override
+    public org.springframework.data.domain.Page<ParticipantPaymentDTO> getPayments(Integer userId,
+            PaymentFilterDTO filters, int page, int size) {
+        Organizer organizer = organizerRepository.findByUserId(userId)
+                .orElseThrow(() -> new NotFoundException("Organizer not found with id: " + userId));
+        Integer organizerEntityId = organizer.getId();
+
+        org.springframework.data.domain.Pageable pageable = org.springframework.data.domain.PageRequest.of(page, size); // Sorting
+                                                                                                                        // handled
+                                                                                                                        // in
+                                                                                                                        // query
+
+        // We need a way to get paginated result.
+        // Re-using criteria builder logic but for Page.
+        return getFilteredPaymentsPage(organizerEntityId, filters, pageable)
+                .map(this::mapToParticipantPaymentDTO);
+    }
+
+    @Override
+    public java.io.ByteArrayInputStream exportPaymentsToCSV(Integer userId) {
+        Organizer organizer = organizerRepository.findByUserId(userId)
+                .orElseThrow(() -> new NotFoundException("Organizer not found with id: " + userId));
+        Integer organizerEntityId = organizer.getId();
+
+        // Get all payments for export
+        List<Payments> payments = getFilteredPaymentsList(organizerEntityId, new PaymentFilterDTO()); // No filters or
+                                                                                                      // default ?
+
+        try (java.io.ByteArrayOutputStream out = new java.io.ByteArrayOutputStream();
+                java.io.PrintWriter writer = new java.io.PrintWriter(out)) {
+
+            // Header
+            writer.println("Transaction ID, Event, Participant, Email, Amount, Status, Method, Date");
+
+            for (Payments payment : payments) {
+                String eventTitle = payment.getEventRegistration().getEvent().getTitle();
+                String participant = payment.getEventRegistration().getContactName() != null
+                        ? payment.getEventRegistration().getContactName()
+                        : payment.getEventRegistration().getUser().getName();
+                String email = payment.getEventRegistration().getEmail() != null
+                        ? payment.getEventRegistration().getEmail()
+                        : payment.getEventRegistration().getUser().getEmail();
+
+                writer.printf("%s, %s, %s, %s, %.2f, %s, %s, %s\n",
+                        payment.getTransactionUuid(),
+                        escapeSpecialCharacters(eventTitle),
+                        escapeSpecialCharacters(participant),
+                        escapeSpecialCharacters(email),
+                        payment.getAmount() != null ? payment.getAmount() : 0.0,
+                        mapPaymentStatusToString(payment.getPaymentStatus()),
+                        mapPaymentMethodToString(payment.getMethod()),
+                        payment.getTransactionDate());
+            }
+            writer.flush();
+            return new java.io.ByteArrayInputStream(out.toByteArray());
+        } catch (Exception e) {
+            throw new RuntimeException("Failed to export data to CSV: " + e.getMessage());
+        }
+    }
+
+    private String escapeSpecialCharacters(String data) {
+        if (data == null)
+            return "";
+        String escapedData = data.replaceAll("\\R", " ");
+        if (data.contains(",") || data.contains("\"") || data.contains("'")) {
+            data = data.replace("\"", "\"\"");
+            escapedData = "\"" + data + "\"";
+        }
+        return escapedData;
+    }
+
+    private ParticipantPaymentDTO mapToParticipantPaymentDTO(Payments payment) {
+        EventRegistration reg = payment.getEventRegistration();
+        Event event = reg.getEvent();
+
+        int numberOfParticipants = reg.getEventParticipants() != null ? reg.getEventParticipants().size() : 0;
+
+        String status = mapPaymentStatusToString(payment.getPaymentStatus());
+        String paymentMethod = mapPaymentMethodToString(payment.getMethod());
+
+        return ParticipantPaymentDTO.builder()
+                .id(payment.getId())
+                .participantName(reg.getContactName() != null ? reg.getContactName() : reg.getUser().getName())
+                .participantEmail(reg.getEmail() != null ? reg.getEmail() : reg.getUser().getEmail())
+                .eventId(event.getId())
+                .eventTitle(event.getTitle())
+                .numberOfParticipants(numberOfParticipants)
+                .paymentDate(payment.getTransactionDate())
+                .amount(payment.getAmount())
+                .status(status)
+                .paymentMethod(paymentMethod)
+                .transactionId(payment.getTransactionUuid())
+                .receiptUrl(null)
+                .build();
+    }
+
+    private org.springframework.data.domain.Page<Payments> getFilteredPaymentsPage(Integer organizerId,
+            PaymentFilterDTO filters, org.springframework.data.domain.Pageable pageable) {
         CriteriaBuilder cb = entityManager.getCriteriaBuilder();
         CriteriaQuery<Payments> cq = cb.createQuery(Payments.class);
         Root<Payments> payment = cq.from(Payments.class);
@@ -93,7 +189,51 @@ public class OrganizerPaymentService implements IOrganizerPaymentService {
         regFetch.fetch("user", JoinType.LEFT);
         regFetch.fetch("eventParticipants", JoinType.LEFT);
 
-        // For predicates, we need joins not fetches
+        // Predicates
+        List<Predicate> predicates = buildPredicates(cb, payment, organizerId, filters);
+
+        cq.where(predicates.toArray(new Predicate[0]));
+        cq.orderBy(cb.desc(payment.get("transactionDate")));
+
+        // Count query
+        CriteriaQuery<Long> countQuery = cb.createQuery(Long.class);
+        Root<Payments> countRoot = countQuery.from(Payments.class);
+        List<Predicate> countPredicates = buildPredicates(cb, countRoot, organizerId, filters); // Rebuild predicates
+                                                                                                // for count root
+        countQuery.select(cb.count(countRoot)).where(countPredicates.toArray(new Predicate[0]));
+        Long count = entityManager.createQuery(countQuery).getSingleResult();
+
+        List<Payments> result = entityManager.createQuery(cq)
+                .setFirstResult((int) pageable.getOffset())
+                .setMaxResults(pageable.getPageSize())
+                .getResultList();
+
+        return new org.springframework.data.domain.PageImpl<>(result, pageable, count);
+    }
+
+    private List<Payments> getFilteredPaymentsList(Integer organizerId, PaymentFilterDTO filters) {
+        CriteriaBuilder cb = entityManager.getCriteriaBuilder();
+        CriteriaQuery<Payments> cq = cb.createQuery(Payments.class);
+        Root<Payments> payment = cq.from(Payments.class);
+
+        // Important: fetch relations to avoid N+1
+        Fetch<Payments, EventRegistration> regFetch = payment.fetch("eventRegistration", JoinType.INNER);
+        regFetch.fetch("event", JoinType.INNER);
+        regFetch.fetch("user", JoinType.LEFT);
+        regFetch.fetch("eventParticipants", JoinType.LEFT);
+
+        List<Predicate> predicates = buildPredicates(cb, payment, organizerId, filters);
+        cq.where(predicates.toArray(new Predicate[0]));
+        cq.orderBy(cb.desc(payment.get("transactionDate")));
+
+        return entityManager.createQuery(cq).getResultList();
+    }
+
+    private List<Predicate> buildPredicates(CriteriaBuilder cb, Root<Payments> payment, Integer organizerId,
+            PaymentFilterDTO filters) {
+        // Important: fetches are not allowed in count query usually, so we rely on
+        // joins if needed for filtering
+        // But for filtering by organizer we need join.
         Join<Payments, EventRegistration> registration = payment.join("eventRegistration", JoinType.INNER);
         Join<EventRegistration, Event> event = registration.join("event", JoinType.INNER);
 
@@ -133,13 +273,11 @@ public class OrganizerPaymentService implements IOrganizerPaymentService {
                     // Payment was made in this date range OR event is in this date range
                     Predicate paymentDateInRange = cb.and(
                             cb.greaterThanOrEqualTo(payment.get("transactionDate"), fromDateTime),
-                            cb.lessThanOrEqualTo(payment.get("transactionDate"), toDateTime)
-                    );
+                            cb.lessThanOrEqualTo(payment.get("transactionDate"), toDateTime));
 
                     Predicate eventDateInRange = cb.and(
                             cb.greaterThanOrEqualTo(event.get("date"), fromDate),
-                            cb.lessThanOrEqualTo(event.get("date"), toDate)
-                    );
+                            cb.lessThanOrEqualTo(event.get("date"), toDate));
 
                     predicates.add(cb.or(paymentDateInRange, eventDateInRange));
                 } else if (filters.getDateRange().getFrom() != null) {
@@ -148,36 +286,28 @@ public class OrganizerPaymentService implements IOrganizerPaymentService {
 
                     predicates.add(cb.or(
                             cb.greaterThanOrEqualTo(payment.get("transactionDate"), fromDateTime),
-                            cb.greaterThanOrEqualTo(event.get("date"), fromDate)
-                    ));
+                            cb.greaterThanOrEqualTo(event.get("date"), fromDate)));
                 } else if (filters.getDateRange().getTo() != null) {
                     LocalDateTime toDateTime = filters.getDateRange().getTo().atTime(23, 59, 59);
                     LocalDate toDate = filters.getDateRange().getTo();
 
                     predicates.add(cb.or(
                             cb.lessThanOrEqualTo(payment.get("transactionDate"), toDateTime),
-                            cb.lessThanOrEqualTo(event.get("date"), toDate)
-                    ));
+                            cb.lessThanOrEqualTo(event.get("date"), toDate)));
                 }
             }
         }
-
-        cq.where(predicates.toArray(new Predicate[0]));
-        cq.distinct(true);
-
-        List<Payments> result = entityManager.createQuery(cq).getResultList();
-        log.info("getFilteredPayments returning {} payments", result.size());
-        return result;
+        return predicates;
     }
 
     private PaymentSummaryDTO buildPaymentSummary(List<Payments> payments, PaymentFilterDTO filters) {
         double totalIncome = payments.stream()
-                .filter(p -> p.getPaymentStatus() == PaymentStatus.SUCCESS)
+                .filter(isRevenueStatus())
                 .mapToDouble(Payments::getAmount)
                 .sum();
 
         long completedPayments = payments.stream()
-                .filter(p -> p.getPaymentStatus() == PaymentStatus.SUCCESS)
+                .filter(isRevenueStatus())
                 .count();
 
         long pendingPayments = payments.stream()
@@ -186,7 +316,9 @@ public class OrganizerPaymentService implements IOrganizerPaymentService {
 
         long refundedPayments = payments.stream()
                 .filter(p -> p.getPaymentStatus() == PaymentStatus.DECLINE ||
-                        p.getPaymentStatus() == PaymentStatus.CANCEL)
+                        p.getPaymentStatus() == PaymentStatus.CANCEL ||
+                        p.getPaymentStatus() == PaymentStatus.REFUNDED ||
+                        p.getPaymentStatus() == PaymentStatus.FAILED)
                 .count();
 
         // Calculate monthly growth
@@ -202,6 +334,14 @@ public class OrganizerPaymentService implements IOrganizerPaymentService {
         // Calculate average payment
         double averagePayment = completedPayments > 0 ? totalIncome / completedPayments : 0.0;
 
+        // Calculate platform fee from verified payments or estimate
+        // If we have fee saved, sum it up, otherwise estimate
+        // Ideally we should sum p.getFee() if available
+        double totalPlatformFee = payments.stream()
+                .filter(isRevenueStatus())
+                .mapToDouble(p -> p.getFee() != null ? p.getFee() : p.getAmount() * 0.10)
+                .sum();
+
         return PaymentSummaryDTO.builder()
                 .totalIncome(totalIncome)
                 .completedPayments((int) completedPayments)
@@ -211,8 +351,20 @@ public class OrganizerPaymentService implements IOrganizerPaymentService {
                 .currency(CURRENCY)
                 .totalParticipants(totalParticipants)
                 .averagePayment(averagePayment)
+                .platformFee((int) totalPlatformFee) // DTO expects int? PlatformFee usually percentage or total? DTO
+                                                     // says int.. likely percentage.
+                // Wait, frontend shows percentage usually. Checking previous code:
+                // .platformFee((int) PLATFORM_FEE_PERCENTAGE)
+                // If it expects percentage, we keep it as constant.
                 .platformFee((int) PLATFORM_FEE_PERCENTAGE)
                 .build();
+    }
+
+    // Helper to identify revenue generating statuses
+    private java.util.function.Predicate<Payments> isRevenueStatus() {
+        return p -> p.getPaymentStatus() == PaymentStatus.SUCCESS ||
+                p.getPaymentStatus() == PaymentStatus.RELEASED ||
+                p.getPaymentStatus() == PaymentStatus.COMPLETED;
     }
 
     private double calculateMonthlyGrowth(List<Payments> payments) {
@@ -220,7 +372,7 @@ public class OrganizerPaymentService implements IOrganizerPaymentService {
         LocalDate lastMonth = now.minusMonths(1);
 
         double currentMonthRevenue = payments.stream()
-                .filter(p -> p.getPaymentStatus() == PaymentStatus.SUCCESS)
+                .filter(isRevenueStatus())
                 .filter(p -> {
                     LocalDate paymentDate = p.getTransactionDate().toLocalDate();
                     return paymentDate.getMonth() == now.getMonth() &&
@@ -230,7 +382,7 @@ public class OrganizerPaymentService implements IOrganizerPaymentService {
                 .sum();
 
         double lastMonthRevenue = payments.stream()
-                .filter(p -> p.getPaymentStatus() == PaymentStatus.SUCCESS)
+                .filter(isRevenueStatus())
                 .filter(p -> {
                     LocalDate paymentDate = p.getTransactionDate().toLocalDate();
                     return paymentDate.getMonth() == lastMonth.getMonth() &&
@@ -280,8 +432,10 @@ public class OrganizerPaymentService implements IOrganizerPaymentService {
                             filteredRegistrations = registrations.stream()
                                     .filter(reg -> {
                                         LocalDate regDate = reg.getRegistrationDate().toLocalDate();
-                                        if (from != null && regDate.isBefore(from)) return false;
-                                        if (to != null && regDate.isAfter(to)) return false;
+                                        if (from != null && regDate.isBefore(from))
+                                            return false;
+                                        if (to != null && regDate.isAfter(to))
+                                            return false;
                                         return true;
                                     })
                                     .collect(Collectors.toList());
@@ -289,23 +443,25 @@ public class OrganizerPaymentService implements IOrganizerPaymentService {
                     }
 
                     int totalParticipants = filteredRegistrations.stream()
-                            .mapToInt(reg -> reg.getEventParticipants() != null ?
-                                    reg.getEventParticipants().size() : 0)
+                            .mapToInt(reg -> reg.getEventParticipants() != null ? reg.getEventParticipants().size() : 0)
                             .sum();
 
                     long paidParticipants = filteredRegistrations.stream()
                             .filter(reg -> reg.getPayments() != null &&
-                                    reg.getPayments().getPaymentStatus() == PaymentStatus.SUCCESS)
+                                    (reg.getPayments().getPaymentStatus() == PaymentStatus.SUCCESS ||
+                                            reg.getPayments().getPaymentStatus() == PaymentStatus.RELEASED ||
+                                            reg.getPayments().getPaymentStatus() == PaymentStatus.COMPLETED))
                             .count();
 
                     double totalRevenue = filteredRegistrations.stream()
                             .filter(reg -> reg.getPayments() != null &&
-                                    reg.getPayments().getPaymentStatus() == PaymentStatus.SUCCESS)
+                                    (reg.getPayments().getPaymentStatus() == PaymentStatus.SUCCESS ||
+                                            reg.getPayments().getPaymentStatus() == PaymentStatus.RELEASED ||
+                                            reg.getPayments().getPaymentStatus() == PaymentStatus.COMPLETED))
                             .mapToDouble(reg -> reg.getPayments().getAmount())
                             .sum();
 
-                    double averagePaymentPerPerson = paidParticipants > 0 ?
-                            totalRevenue / paidParticipants : 0.0;
+                    double averagePaymentPerPerson = paidParticipants > 0 ? totalRevenue / paidParticipants : 0.0;
 
                     double organizerShare = totalRevenue * (1 - PLATFORM_FEE_PERCENTAGE / 100.0);
 
@@ -346,18 +502,17 @@ public class OrganizerPaymentService implements IOrganizerPaymentService {
                     EventRegistration reg = payment.getEventRegistration();
                     Event event = reg.getEvent();
 
-                    int numberOfParticipants = reg.getEventParticipants() != null ?
-                            reg.getEventParticipants().size() : 0;
+                    int numberOfParticipants = reg.getEventParticipants() != null ? reg.getEventParticipants().size()
+                            : 0;
 
                     String status = mapPaymentStatusToString(payment.getPaymentStatus());
                     String paymentMethod = mapPaymentMethodToString(payment.getMethod());
 
                     return ParticipantPaymentDTO.builder()
                             .id(payment.getId())
-                            .participantName(reg.getContactName() != null ? reg.getContactName() :
-                                    reg.getUser().getName())
-                            .participantEmail(reg.getEmail() != null ? reg.getEmail() :
-                                    reg.getUser().getEmail())
+                            .participantName(
+                                    reg.getContactName() != null ? reg.getContactName() : reg.getUser().getName())
+                            .participantEmail(reg.getEmail() != null ? reg.getEmail() : reg.getUser().getEmail())
                             .eventId(event.getId())
                             .eventTitle(event.getTitle())
                             .numberOfParticipants(numberOfParticipants)
@@ -377,8 +532,11 @@ public class OrganizerPaymentService implements IOrganizerPaymentService {
         List<Payments> allPayments = paymentRepository.findByOrganizerId(organizerId);
 
         // Filter only successful payments
+        // Filter only successful/released payments
         allPayments = allPayments.stream()
-                .filter(p -> p.getPaymentStatus() == PaymentStatus.SUCCESS)
+                .filter(p -> p.getPaymentStatus() == PaymentStatus.SUCCESS ||
+                        p.getPaymentStatus() == PaymentStatus.RELEASED ||
+                        p.getPaymentStatus() == PaymentStatus.COMPLETED)
                 .collect(Collectors.toList());
 
         Organizer organizer = organizerRepository.findById(organizerId)
@@ -413,9 +571,8 @@ public class OrganizerPaymentService implements IOrganizerPaymentService {
                     .mapToDouble(Payments::getAmount)
                     .sum();
 
-            double growth = previousRevenue > 0 ?
-                    ((revenue - previousRevenue) / previousRevenue) * 100.0 :
-                    (revenue > 0 ? 100.0 : 0.0);
+            double growth = previousRevenue > 0 ? ((revenue - previousRevenue) / previousRevenue) * 100.0
+                    : (revenue > 0 ? 100.0 : 0.0);
 
             int eventCount = (int) events.stream()
                     .filter(e -> {
@@ -431,8 +588,9 @@ public class OrganizerPaymentService implements IOrganizerPaymentService {
                         return paymentDate.getMonth() == monthDate.getMonth() &&
                                 paymentDate.getYear() == monthDate.getYear();
                     })
-                    .mapToInt(p -> p.getEventRegistration().getEventParticipants() != null ?
-                            p.getEventRegistration().getEventParticipants().size() : 0)
+                    .mapToInt(p -> p.getEventRegistration().getEventParticipants() != null
+                            ? p.getEventRegistration().getEventParticipants().size()
+                            : 0)
                     .sum();
 
             monthlyRevenues.add(MonthlyRevenueDTO.builder()
@@ -449,7 +607,8 @@ public class OrganizerPaymentService implements IOrganizerPaymentService {
 
     // Helper methods for mapping
     private PaymentStatus mapStatusToEnum(String status) {
-        if (status == null) return null;
+        if (status == null)
+            return null;
         switch (status.toUpperCase()) {
             case "COMPLETED":
             case "SUCCESS":
@@ -461,14 +620,19 @@ public class OrganizerPaymentService implements IOrganizerPaymentService {
                 return PaymentStatus.DECLINE;
             case "REFUNDED":
             case "CANCEL":
-                return PaymentStatus.CANCEL;
+                return PaymentStatus.CANCEL; // Mapping frontend cancel to backend CANCEL for now, or new REFUNDED
+            case "RELEASED":
+                return PaymentStatus.RELEASED;
+            case "VERIFIED":
+                return PaymentStatus.COMPLETED;
             default:
                 return null;
         }
     }
 
     private PaymentMethod mapPaymentMethodToEnum(String method) {
-        if (method == null) return null;
+        if (method == null)
+            return null;
         switch (method.toUpperCase()) {
             case "CREDIT_CARD":
             case "CARD":
@@ -483,23 +647,30 @@ public class OrganizerPaymentService implements IOrganizerPaymentService {
     }
 
     private String mapPaymentStatusToString(PaymentStatus status) {
-        if (status == null) return "PENDING";
+        if (status == null)
+            return "PENDING";
         switch (status) {
             case SUCCESS:
-                return "COMPLETED";
+                return "COMPLETED"; // User display for SUCCESS
             case PENDING:
                 return "PENDING";
             case DECLINE:
                 return "FAILED";
             case CANCEL:
+            case REFUNDED:
                 return "REFUNDED";
+            case COMPLETED:
+                return "VERIFIED"; // Admin verified
+            case RELEASED:
+                return "RELEASED";
             default:
                 return "PENDING";
         }
     }
 
     private String mapPaymentMethodToString(PaymentMethod method) {
-        if (method == null) return "CREDIT_CARD";
+        if (method == null)
+            return "CREDIT_CARD";
         switch (method) {
             case CARD:
                 return "CREDIT_CARD";

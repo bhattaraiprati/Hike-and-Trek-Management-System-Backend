@@ -47,4 +47,12 @@ public class User {
     @OneToMany(mappedBy = "user" ,cascade = CascadeType.ALL, fetch = FetchType.LAZY)
     private List<EventRegistration> eventRegistration;
 
+    @OneToMany(mappedBy = "user", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
+    private List<Reviews> reviews;
+
+    @Column(updatable = false)
+    @org.hibernate.annotations.CreationTimestamp
+    private java.time.LocalDateTime createdAt;
+
+    private java.time.LocalDateTime lastLogin;
 }

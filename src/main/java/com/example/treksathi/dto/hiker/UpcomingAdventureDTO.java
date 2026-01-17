@@ -14,6 +14,7 @@ import java.time.LocalDate;
 @AllArgsConstructor
 public class UpcomingAdventureDTO {
     private Integer id;
+    private Integer bookingId;
     private String title;
     private String location;
     private LocalDate date;

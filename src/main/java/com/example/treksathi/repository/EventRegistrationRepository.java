@@ -61,7 +61,15 @@ import com.example.treksathi.record.UpcommingEventRecord;
         List<EventRegistration> findByUserIdOrderByRegistrationDateDesc(int userId);
         List<EventRegistration> findByUserIdAndEventDateAfterOrderByEventDateAsc(int userId, LocalDate date);
         List<EventRegistration> findTop5ByUserIdOrderByRegistrationDateDesc(int userId);
-        int countByUserIdAndEventDateBeforeAndStatus(int userId, LocalDate date, EventRegistrationStatus status);
+
+        @Query(" select count(er) from EventRegistration er " +
+                "join er.event e"+
+               " join er.eventParticipants ep " +
+               " where er.user.id = :userId " +
+                "and ep.attendanceStatus = 'PRESENT' "+
+                "and e.date < :date " +
+                "and e.status = :status ")
+        int countByUserIdAndEventDateBeforeAndStatus(@Param("userId") int userId, @Param("date") LocalDate date, @Param("status") EventStatus status);
         int countByEventId(int eventId);
         List<EventRegistration> findByUserIdAndEventStatus(int userId, EventStatus status);
      }

@@ -64,10 +64,17 @@ public class SecurityConfig {
                 .cors(cors -> cors.configurationSource(corsConfigurationSource()))
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers( "/auth/**", "/event/registration/success", "/event/registration/failure").permitAll()
-                        .requestMatchers("/api/oauth2/**", "/oauth2/**", "/login/oauth2/**", "/oauth2/authorization/**").permitAll()
-                        .requestMatchers("/v3/api-docs", "/swagger-ui/**","/swagger-ui.html",
+                        .requestMatchers("/v3/api-docs/auth/**").permitAll()
+                        .requestMatchers("/auth/**").permitAll()
+                        .requestMatchers("/auth/**").permitAll()
+                        .requestMatchers("/oauth2/**", "/oauth2/**", "/login/oauth2/**", "/oauth2/authorization/**").permitAll()
+                        .requestMatchers(
+                                "/v3/api-docs/**",
+                                "/swagger-ui/**",
+                                "/swagger-ui.html",
                                 "/swagger-resources/**",
-                                "/webjars/**").permitAll()
+                                "/webjars/**"
+                        ).permitAll()
                         .requestMatchers("/ws/**").permitAll()
                         .requestMatchers("/ws/info/**").permitAll()  // Especially this one
                         .requestMatchers("/api/ws/**").permitAll()

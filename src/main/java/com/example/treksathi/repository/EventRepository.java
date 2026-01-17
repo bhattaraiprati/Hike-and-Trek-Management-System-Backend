@@ -17,50 +17,61 @@ import com.example.treksathi.record.EventCardResponse;
 
 public interface EventRepository extends JpaRepository<Event, Integer>, JpaSpecificationExecutor<Event> {
 
-    @Query("SELECT e FROM Event e WHERE e.organizer = :organizer AND e.status <> com.example.treksathi.enums.EventStatus.DELETED")
-    List<Event> findByOrganizer(@Param("organizer") Organizer organizer);
+        @Query("SELECT e FROM Event e WHERE e.organizer = :organizer AND e.status <> com.example.treksathi.enums.EventStatus.DELETED")
+        List<Event> findByOrganizer(@Param("organizer") Organizer organizer);
 
-    @Query("SELECT e from Event e"+
-    " where e.status='ACTIVE'")
-    Page<Event> findByAll(Pageable pageable);
+        @Query("SELECT e from Event e" +
+                        " where e.status='ACTIVE'")
+        Page<Event> findByAll(Pageable pageable);
 
-    Page<Event> findByStatus(@Param("status") EventStatus status, Pageable pageable);
+        Page<Event> findByStatus(@Param("status") EventStatus status, Pageable pageable);
 
-    List<Event> findByStatus(EventStatus status);
+        List<Event> findByStatus(EventStatus status);
 
-    List<Event> findByDifficultyLevel(String difficultyLevel);
+        List<Event> findByDifficultyLevel(String difficultyLevel);
 
-    List<Event> findByLocationContainingIgnoreCase(String location);
+        List<Event> findByLocationContainingIgnoreCase(String location);
 
-    @Query("SELECT COUNT(e) FROM Event e WHERE e.organizer.id = :organizerId")
-    int countByOrganizerId(@Param("organizerId") int organizerId);
+        @Query("SELECT COUNT(e) FROM Event e WHERE e.organizer.id = :organizerId")
+        int countByOrganizerId(@Param("organizerId") int organizerId);
 
-    @Query("SELECT COUNT(e) FROM Event e WHERE e.organizer.id = :organizerId AND e.status = :status")
-    int countByOrganizerIdAndStatus(@Param("organizerId") int organizerId, @Param("status") EventStatus status);
+        @Query("SELECT COUNT(e) FROM Event e WHERE e.organizer.id = :organizerId AND e.status = :status")
+        int countByOrganizerIdAndStatus(@Param("organizerId") int organizerId, @Param("status") EventStatus status);
 
-    @Query("SELECT COUNT(e) FROM Event e WHERE e.organizer.id = :organizerId AND e.status = :status AND e.date >= CURRENT_DATE")
-    int countUpcomingEventsByOrganizerIdAndStatus(@Param("organizerId") int organizerId, @Param("status") EventStatus status);
-    @Query("SELECT e FROM Event e WHERE e.organizer.id = :organizerId AND e.status = :status AND e.date >= CURRENT_DATE ORDER BY e.date ASC")
-    List<Event> findUpcomingEventsByOrganizerId(@Param("organizerId") int organizerId, @Param("status") EventStatus status);
-    @Query("SELECT new com.example.treksathi.record.EventCardResponse(" +
-            "e.id, e.title, e.description, e.location, e.date, " +
-            "e.durationDays, " +
-            "CAST(e.difficultyLevel AS string), " +
-            "e.price, e.maxParticipants, e.bannerImageUrl, " +
-            "CAST(e.status AS string), " +
-            "COUNT(DISTINCT ep.id)) " +
-            "FROM Event e " +
-            "LEFT JOIN e.eventRegistration er " +
-            "LEFT JOIN er.eventParticipants ep " +
-            "WHERE e.status = :status " +
-            "GROUP BY e.id, e.title, e.description, e.location, e.date, " +
-            "e.durationDays, e.difficultyLevel, e.price, e.maxParticipants, " +
-            "e.bannerImageUrl, e.status"+
-            " order by e.date desc ")
-    Page<EventCardResponse> findEventCardsWithParticipantCount(
-            @Param("status") EventStatus status,
-            Pageable pageable
-    );
+        @Query("SELECT COUNT(e) FROM Event e WHERE e.organizer.id = :organizerId AND e.status = :status AND e.date >= CURRENT_DATE")
+        int countUpcomingEventsByOrganizerIdAndStatus(@Param("organizerId") int organizerId,
+                        @Param("status") EventStatus status);
 
-    List<Event> findByDateAfterAndStatusOrderByDateAsc(LocalDate date, EventStatus status);
+        @Query("SELECT e FROM Event e WHERE e.organizer.id = :organizerId AND e.status = :status AND e.date >= CURRENT_DATE ORDER BY e.date ASC")
+        List<Event> findUpcomingEventsByOrganizerId(@Param("organizerId") int organizerId,
+                        @Param("status") EventStatus status);
+
+        @Query("SELECT new com.example.treksathi.record.EventCardResponse(" +
+                        "e.id, e.title, e.description, e.location, e.date, " +
+                        "e.durationDays, " +
+                        "CAST(e.difficultyLevel AS string), " +
+                        "e.price, e.maxParticipants, e.bannerImageUrl, " +
+                        "CAST(e.status AS string), " +
+                        "COUNT(DISTINCT ep.id)) " +
+                        "FROM Event e " +
+                        "LEFT JOIN e.eventRegistration er " +
+                        "LEFT JOIN er.eventParticipants ep " +
+                        "WHERE e.status = :status " +
+                        "GROUP BY e.id, e.title, e.description, e.location, e.date, " +
+                        "e.durationDays, e.difficultyLevel, e.price, e.maxParticipants, " +
+                        "e.bannerImageUrl, e.status" +
+                        " order by e.date desc ")
+        Page<EventCardResponse> findEventCardsWithParticipantCount(
+                        @Param("status") EventStatus status,
+                        Pageable pageable);
+
+        List<Event> findByDateAfterAndStatusOrderByDateAsc(LocalDate date, EventStatus status);
+
+        long countByStatus(EventStatus status);
+
+        java.util.List<Event> findTop5ByOrderByCreatedAtDesc();
+
+        long countByCreatedAtAfter(java.time.LocalDateTime date);
+
+        long countByCreatedAtBetween(java.time.LocalDateTime start, java.time.LocalDateTime end);
 }
