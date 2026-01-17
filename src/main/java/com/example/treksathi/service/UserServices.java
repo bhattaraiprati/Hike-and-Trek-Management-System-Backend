@@ -39,6 +39,13 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.StringUtils;
 
+import com.example.treksathi.dto.user.UserManagementDTO;
+import com.example.treksathi.specification.UserSpecification;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.jpa.domain.Specification;
+
 import java.time.LocalDateTime;
 import java.util.Optional;
 
@@ -59,43 +66,43 @@ public class UserServices implements IUserServices {
     private final IRefreshTokenService refreshTokenService;
     private final InMemoryTokenBlacklist inMemoryTokenBlacklist;
 
-
     @Transactional
     public User signup(UserCreateDTO request) {
-        try{
+        try {
             String email = request.getEmail();
             Optional<User> existingUser = userRepository.findByEmail(email);
             if (existingUser.isPresent()) {
-                throw new UserAlreadyExistException(String.format("User with the email address '%s' already exists", email));
+                throw new UserAlreadyExistException(
+                        String.format("User with the email address '%s' already exists", email));
             }
             String hashedPassword = passwordEncoder.encode(request.getPassword());
+            log.info("the Encrypted password is " + hashedPassword);
             User user = new User();
             user.setName(request.getName());
             user.setEmail(email);
             user.setPassword(hashedPassword);
             user.setRole(Role.HIKER); // default if invalid
             user = userRepository.save(user);
-            try{
+            try {
                 sendRegistrationOTP(user);
-            }catch (Exception e){
+            } catch (Exception e) {
                 log.error("Failed to initiate OTP sending for user: {}", user.getId(), e);
             }
 
             return user;
-        }
-        catch (Exception e){
+        } catch (Exception e) {
             throw new InvalidCredentialsException("Unable to register the user");
         }
     }
 
-//    public
+    // public
 
     @Transactional
     public LoginResponseDTO verify(UserCreateDTO userCreateDTO) {
         try {
 
             Optional<User> userOpt = userRepository.findByEmail(userCreateDTO.getEmail());
-            log.info("Here is the user info"+ userOpt);
+            log.info("Here is the user info" + userOpt);
             if (userOpt.isEmpty()) {
                 throw new UsernameNotFoundException("User not found with email: " + userCreateDTO.getEmail());
             }
@@ -104,20 +111,24 @@ public class UserServices implements IUserServices {
             if (user.getRole() == Role.ORGANIZER) {
                 Organizer organizer = organizerRepository.findByUser(user);
 
-                if (organizer != null && organizer.getApproval_status() == Approval_status.PENDING) {
+                if (organizer != null && organizer.getApprovalStatus() == Approval_status.PENDING) {
                     throw new UnauthorizedException("Your account is under review. Please wait for admin approval.");
                 }
 
-                if (organizer != null && organizer.getApproval_status() == Approval_status.DECLINE) {
+                if (organizer != null && organizer.getApprovalStatus() == Approval_status.DECLINE) {
                     throw new UnauthorizedException("Your account has been rejected. Please contact support.");
                 }
             }
-            UsernamePasswordAuthenticationToken authToken =
-                    new UsernamePasswordAuthenticationToken(userCreateDTO.getEmail(), userCreateDTO.getPassword());
+            UsernamePasswordAuthenticationToken authToken = new UsernamePasswordAuthenticationToken(
+                    userCreateDTO.getEmail(), userCreateDTO.getPassword());
 
             Authentication auth = authenticationManager.authenticate(authToken);
 
             if (auth.isAuthenticated()) {
+                // Update last login
+                user.setLastLogin(LocalDateTime.now());
+                userRepository.save(user);
+
                 // Delete any existing refresh token before creating a new one
                 refreshTokenService.findTokenByUser(user);
 
@@ -127,8 +138,7 @@ public class UserServices implements IUserServices {
                         user.getId(),
                         user.getEmail(),
                         user.getName(),
-                        String.valueOf(user.getRole())
-                );
+                        String.valueOf(user.getRole()));
 
                 return LoginResponseDTO.builder()
                         .token(token)
@@ -137,28 +147,102 @@ public class UserServices implements IUserServices {
             } else {
                 throw new InvalidCredentialsException("Invalid credentials");
             }
-
         } catch (BadCredentialsException e) {
             throw new InvalidCredentialsException("Invalid email or password");
         }
     }
 
-    public LoginResponseDTO generateNewAccessToken( String token){
-        RefreshToken refreshToken = refreshTokenService.findByToken(token).orElseThrow( () -> new RuntimeException( "Refresh Token is not in DB."));
+    public Page<UserManagementDTO> getAllUsers(int page, int size, String role, String status, String search) {
+        Pageable pageable = PageRequest.of(page, size);
+        Specification<User> spec = UserSpecification.getUsers(role, status, search);
+        Page<User> usersPage = userRepository.findAll(spec, pageable);
+
+        return usersPage.map(this::mapToUserManagementDTO);
+    }
+
+    public UserManagementDTO updateUserStatus(int userId, String statusStr) {
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new UsernameNotFoundException("User not found"));
+
+        try {
+            AccountStatus status = AccountStatus.valueOf(statusStr);
+            user.setStatus(status);
+            User savedUser = userRepository.save(user);
+            return mapToUserManagementDTO(savedUser);
+        } catch (IllegalArgumentException e) {
+            throw new IllegalArgumentException("Invalid status: " + statusStr);
+        }
+    }
+
+    public UserManagementDTO getUserById(int userId) {
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new UsernameNotFoundException("User not found"));
+        return mapToUserManagementDTO(user);
+    }
+
+    private UserManagementDTO mapToUserManagementDTO(User user) {
+        UserManagementDTO.UserManagementDTOBuilder builder = UserManagementDTO.builder()
+                .id(user.getId())
+                .email(user.getEmail())
+                .name(user.getName())
+                .phone(user.getPhone())
+                .profileImage(user.getProfileImage())
+                .providerId(user.getProviderId())
+                .providerType(user.getProviderType())
+                .role(user.getRole())
+                .status(user.getStatus())
+                .createdAt(user.getCreatedAt())
+                .lastLogin(user.getLastLogin());
+
+        // Organizer Info
+        if (user.getRole() == Role.ORGANIZER && user.getOrganizer() != null) {
+            builder.organizer(UserManagementDTO.OrganizerInfoDTO.builder()
+                    .id(user.getOrganizer().getId())
+                    .organizationName(user.getOrganizer().getOrganization_name())
+                    .approvalStatus(String.valueOf(user.getOrganizer().getApprovalStatus()))
+                    .build());
+        }
+
+        // Stats Calculation
+        long totalBookings = 0;
+        double totalSpent = 0.0;
+        if (user.getEventRegistration() != null) {
+            totalBookings = user.getEventRegistration().size();
+            totalSpent = user.getEventRegistration().stream()
+                    .filter(reg -> reg.getPayments() != null)
+                    .mapToDouble(reg -> reg.getPayments().getAmount() != null ? reg.getPayments().getAmount() : 0.0)
+                    .sum();
+        }
+
+        int reviewsCount = 0;
+        if (user.getReviews() != null) {
+            reviewsCount = user.getReviews().size();
+        }
+
+        builder.totalBookings(totalBookings)
+                .totalSpent(totalSpent)
+                .reviewsCount(reviewsCount);
+
+        return builder.build();
+    }
+
+    public LoginResponseDTO generateNewAccessToken(String token) {
+        RefreshToken refreshToken = refreshTokenService.findByToken(token)
+                .orElseThrow(() -> new RuntimeException("Refresh Token is not in DB."));
         return refreshTokenService.findByToken(token)
                 .map(refreshTokenService::verifyExpiration)
                 .map(RefreshToken::getUser)
                 .map(user -> {
                     User user1 = userRepository.findByEmail(user.getEmail()).orElse(null);
-                    String jwt = jwtService.generateToken(user1.getId(), user1.getEmail(), user1.getName(), String.valueOf(user1.getRole()));
+                    String jwt = jwtService.generateToken(user1.getId(), user1.getEmail(), user1.getName(),
+                            String.valueOf(user1.getRole()));
                     return LoginResponseDTO.builder()
                             .token(jwt)
                             .refreshToken(token)
                             .build();
-                }).orElseThrow(() ->new RuntimeException("Refresh Token is not in DB..!!"));
+                }).orElseThrow(() -> new RuntimeException("Refresh Token is not in DB..!!"));
 
     }
-
 
     @Transactional
     public void sendRegistrationOTP(User user) {
@@ -175,15 +259,13 @@ public class UserServices implements IUserServices {
         otp.setUsed(false);
         otpRepository.save(otp);
 
-
         String subject = "Account Verification OTP";
         String text = String.format(
                 "Hello %s,\n\n" +
                         "Your OTP for email verification is: %d\n" +
                         "This OTP is valid for 5 minutes.\n\n" +
                         "If you didn't request this, please ignore this email.",
-                user.getName(), otpValue
-        );
+                user.getName(), otpValue);
 
         emailSendService.sendSimpleEmailAsync(user.getEmail(), subject, text)
                 .exceptionally(ex -> {
@@ -241,24 +323,25 @@ public class UserServices implements IUserServices {
         return true;
     }
 
-    public User uploadImageUrl(UploadIImageDTO image){
+    public User uploadImageUrl(UploadIImageDTO image) {
         User user = userRepository.findById(image.getId()).orElse(null);
         user.setProfileImage(image.getImage());
         return userRepository.save(user);
     }
-    public String getProfileUrl(int id){
+
+    public String getProfileUrl(int id) {
         User user = userRepository.findById(id).orElse(null);
 
         return user.getProfileImage();
     }
 
-    public boolean logoutUser(HttpServletRequest request){
+    public boolean logoutUser(HttpServletRequest request) {
         String authorizationHeader = request.getHeader("Authorization");
-        log.info("The authentication header"+ authorizationHeader);
-        try{
-            if (StringUtils.hasText(authorizationHeader) && authorizationHeader.startsWith("Bearer ")){
+        log.info("The authentication header" + authorizationHeader);
+        try {
+            if (StringUtils.hasText(authorizationHeader) && authorizationHeader.startsWith("Bearer ")) {
                 String token = authorizationHeader.substring(7);
-                log.info("The authentication token"+ token);
+                log.info("The authentication token" + token);
                 inMemoryTokenBlacklist.addToBlackList(token);
                 String email = jwtService.getUsernameFormToken(token);
                 User user = userRepository.findByEmail(email).orElse(null);
@@ -266,9 +349,8 @@ public class UserServices implements IUserServices {
                 SecurityContextHolder.clearContext();
                 return true;
             }
-        }
-        catch (Exception e){
-            throw new RuntimeException("Exception Occur"+e);
+        } catch (Exception e) {
+            throw new RuntimeException("Exception Occur" + e);
         }
         return false;
     }
@@ -276,7 +358,6 @@ public class UserServices implements IUserServices {
     public Optional<User> findByEmail(String email) {
         return userRepository.findByEmail(email);
     }
-
 
     public ResponseEntity<LoginResponseDTO> handleOAuth2LoginRequest(OAuth2User oAuth2User, String registrationId) {
 
@@ -288,23 +369,23 @@ public class UserServices implements IUserServices {
         User emailUser = userRepository.findByEmail(email).orElse(null);
 
         if (user == null && emailUser == null) {
+            // Create new user
             User newUser = new User();
             newUser.setEmail(email);
             newUser.setName(oAuth2User.getAttribute("name"));
             newUser.setProviderId(providerId);
             newUser.setProviderType(providertype);
             newUser.setRole(Role.HIKER); // Default role
+            newUser.setStatus(AccountStatus.ACTIVE); // OAuth users are automatically active
             user = userRepository.save(newUser);
             log.info("New OAuth2 user created: {} via {}", email, providertype);
-        }
-        else if (user == null && emailUser != null) {
+        } else if (user == null && emailUser != null) {
+            // Link OAuth provider to existing user
             emailUser.setProviderId(providerId);
             emailUser.setProviderType(providertype);
-
             user = userRepository.save(emailUser);
             log.info("Linked OAuth2 provider {} to existing user: {}", providertype, email);
-        }
-        else if (user != null) {
+        } else if (user != null) {
             // User already exists with this OAuth provider
             log.info("Existing OAuth2 user logged in: {} via {}", email, providertype);
 
@@ -316,19 +397,28 @@ public class UserServices implements IUserServices {
             }
         }
 
+        // IMPORTANT: Delete any existing refresh token before creating a new one
+        try {
+            refreshTokenService.findTokenByUser(user);
+            log.info("Deleted existing refresh token for user: {}", user.getId());
+        } catch (Exception e) {
+            log.debug("No existing refresh token found for user: {}", user.getId());
+        }
+
+        // Create new refresh token
         RefreshToken refreshToken = refreshTokenService.createRefreshToken(user.getEmail());
+
         // Generate JWT token
         String token = jwtService.generateToken(
                 user.getId(),
                 user.getEmail(),
                 user.getName(),
-                String.valueOf(user.getRole())
-        );
+                String.valueOf(user.getRole()));
+
         LoginResponseDTO loginResponseDTO = new LoginResponseDTO();
         loginResponseDTO.setToken(token);
         loginResponseDTO.setRefreshToken(refreshToken.getToken());
-        return ResponseEntity.ok(loginResponseDTO);
 
+        return ResponseEntity.ok(loginResponseDTO);
     }
 }
-

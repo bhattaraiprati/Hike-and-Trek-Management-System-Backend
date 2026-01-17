@@ -3,6 +3,7 @@ package com.example.treksathi.service;
 import com.example.treksathi.Interfaces.IHikerService;
 import com.example.treksathi.dto.hiker.*;
 import com.example.treksathi.enums.EventRegistrationStatus;
+import com.example.treksathi.enums.EventStatus;
 import com.example.treksathi.enums.PaymentStatus;
 import com.example.treksathi.model.*;
 import com.example.treksathi.repository.*;
@@ -206,7 +207,7 @@ public class HikerServiceImpl implements IHikerService {
                 .countByUserIdAndEventDateBeforeAndStatus(
                         user.getId(),
                         LocalDate.now(),
-                        EventRegistrationStatus.SUCCESS
+                        EventStatus.COMPLETED
                 );
 
         String membershipLevel = calculateMembershipLevel(completedTrips);
@@ -221,9 +222,9 @@ public class HikerServiceImpl implements IHikerService {
     }
 
     private String calculateMembershipLevel(int completedTrips) {
-        if (completedTrips >= 20) return "EXPERT";
-        if (completedTrips >= 10) return "ADVANCED";
-        if (completedTrips >= 5) return "INTERMEDIATE";
+        if (completedTrips >= 50) return "EXPERT";
+        if (completedTrips >= 30) return "ADVANCED";
+        if (completedTrips >= 10) return "INTERMEDIATE";
         return "BEGINNER";
     }
 
@@ -263,6 +264,7 @@ public class HikerServiceImpl implements IHikerService {
 
         return UpcomingAdventureDTO.builder()
                 .id(event.getId())
+                .bookingId(registration.getId())
                 .title(event.getTitle())
                 .location(event.getLocation())
                 .date(event.getDate())

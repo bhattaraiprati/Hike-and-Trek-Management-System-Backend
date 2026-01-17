@@ -36,6 +36,8 @@ public class Event {
     @Enumerated(EnumType.STRING)
     private DifficultyLevel difficultyLevel;
 
+    private String category;
+
     private double price;
     private int maxParticipants;
 
@@ -67,6 +69,7 @@ public class Event {
 
     @OneToMany(mappedBy = "events", fetch = FetchType.LAZY, cascade = CascadeType.ALL)
     private List<Reviews> reviews;
+
     @PrePersist
     public void onCreate() {
         this.createdAt = LocalDateTime.now();

@@ -32,6 +32,7 @@ public class HikerController {
         return ResponseEntity.ok(hikerService.getStats(email));
     }
 
+
     @GetMapping("/dashboard/upcoming-events")
     public ResponseEntity<List<UpcomingAdventureDTO>> getUpcomingEvents(Authentication authentication) {
         String email = authentication.getName();

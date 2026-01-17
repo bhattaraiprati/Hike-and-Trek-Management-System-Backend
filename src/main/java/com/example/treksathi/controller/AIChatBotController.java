@@ -17,13 +17,6 @@ public class AIChatBotController {
 
     private final RagService ragService;
 
-//    @PostMapping("/ask")
-//    public String ask(@RequestBody QuestionRequest request) {
-//        return ragService.askQuestion(request.question());
-//    }
-//
-//    public record QuestionRequest(String question) {}
-
 
     /**
      * Main chatbot endpoint - returns text + event cards

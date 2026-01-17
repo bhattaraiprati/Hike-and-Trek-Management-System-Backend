@@ -1,6 +1,7 @@
 package com.example.treksathi.service;
 
 import com.example.treksathi.Interfaces.IEmailSendService;
+import com.example.treksathi.model.EventRegistration;
 import jakarta.mail.MessagingException;
 import jakarta.mail.internet.MimeMessage;
 import lombok.RequiredArgsConstructor;
@@ -39,6 +40,57 @@ public class EmailSendService implements IEmailSendService {
             return CompletableFuture.completedFuture(true);
         } catch (Exception e) {
             log.error("Failed to send email to: {}, Error: {}", to, e.getMessage());
+            return CompletableFuture.completedFuture(false);
+        }
+    }
+
+    @Async("taskExecutor")
+    public CompletableFuture<Boolean> sendBookingConfirmationEmail(EventRegistration registration) {
+        try {
+            String subject = "Booking Confirmed - " + registration.getEvent().getTitle();
+
+            // Simple plain text message
+            StringBuilder text = new StringBuilder();
+            text.append("Dear ").append(registration.getContactName() != null ?
+                    registration.getContactName() : registration.getUser().getName()).append(",\n\n");
+
+            text.append("Thank you for your payment!\n");
+            text.append("Your registration for the event has been successfully confirmed.\n\n");
+
+            text.append("Event Details:\n");
+            text.append("• Event: ").append(registration.getEvent().getTitle()).append("\n");
+            text.append("• Date: ").append(registration.getEvent().getDate()).append("\n");
+            text.append("• Participants: ").append(registration.getEventParticipants().size()).append("\n");
+
+            if (registration.getPayments() != null) {
+                double amount = registration.getPayments().getAmount() / 100.0;
+                text.append("• Amount Paid: NPR ").append(String.format("%.2f", amount)).append("\n");
+            }
+
+            text.append("• Booking ID: ").append(registration.getId()).append("\n\n");
+
+            text.append("We're excited to see you at the event!\n");
+            text.append("If you have any questions, feel free to reply to this email.\n\n");
+
+            text.append("Best regards,\n");
+            text.append(registration.getEvent().getOrganizer().getOrganization_name()).append("\n");
+            text.append("Event Team\n");
+            text.append("Kathmandu, Nepal");
+
+            SimpleMailMessage message = new SimpleMailMessage();
+            message.setFrom(email);
+            message.setTo(registration.getEmail());  // or registration.getEmail() if different field
+            message.setSubject(subject);
+            message.setText(text.toString());
+
+            javaMailSender.send(message);
+
+            log.info("Simple confirmation email sent to: {}", registration.getUser().getEmail());
+            return CompletableFuture.completedFuture(true);
+
+        } catch (Exception e) {
+            log.error("Failed to send simple confirmation email for registration {}: {}",
+                    registration.getId(), e.getMessage(), e);
             return CompletableFuture.completedFuture(false);
         }
     }

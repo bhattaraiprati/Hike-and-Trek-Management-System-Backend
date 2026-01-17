@@ -28,7 +28,7 @@ public class Organizer {
     @Column(length = 250)
     private String about;
     @Enumerated(EnumType.STRING)
-    private Approval_status approval_status = Approval_status.PENDING;
+    private Approval_status approvalStatus = Approval_status.PENDING;
 
     @OneToMany(mappedBy = "organizer")
     private List<Event> events;

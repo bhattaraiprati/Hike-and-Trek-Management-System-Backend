@@ -44,7 +44,6 @@ public class OrganizerService implements IOrganizerService {
     private final NotificationRecipientRepository notificationRecipientRepository;
     private final PasswordEncoder passwordEncoder;
 
-
     @Transactional
     public Organizer registerOrganizer(OrganizerRegistrationDTO dto){
 
@@ -62,7 +61,7 @@ public class OrganizerService implements IOrganizerService {
             user.setPhone(dto.getPhone());
             user.setRole(Role.ORGANIZER);
             user.setProviderType(AuthProvidertype.LOCAL);
-            user.setStatus(AccountStatus.PENDING);
+            user.setStatus(AccountStatus.ACTIVE);
             user = userRepository.save(user);
 
             Organizer organizer = new Organizer();
@@ -73,7 +72,7 @@ public class OrganizerService implements IOrganizerService {
             organizer.setPhone(dto.getPhone());
             organizer.setAbout(dto.getAbout());
             organizer.setDocument_url(dto.getDocumentUrl());
-            organizer.setApproval_status(Approval_status.PENDING);
+            organizer.setApprovalStatus(Approval_status.SUCCESS);
             organizer = organizerRepository.save(organizer);
             try{
                 userServicesl.sendRegistrationOTP(user);
@@ -164,7 +163,7 @@ public class OrganizerService implements IOrganizerService {
         dto.setTotalParticipants(totalParticipants);
         dto.setAverageRating(avgRating != null ? avgRating : 0.0);
         dto.setMemberSince(organizer.getCreatedAt());
-        dto.setVerificationStatus(organizer.getApproval_status().name());
+        dto.setVerificationStatus(organizer.getApprovalStatus().name());
 
         OrganizerProfileDTO.Stats stats = new OrganizerProfileDTO.Stats();
         stats.setTotalRevenue(0.0);
@@ -202,14 +201,16 @@ public class OrganizerService implements IOrganizerService {
         stats.setTotalEarnings(totalEarnings != null ? totalEarnings : 0.0);
 
         // Get upcoming events (limit to 3)
-        List<Event> upcomingEventsList = eventRepository.findUpcomingEventsByOrganizerId(organizerId, EventStatus.ACTIVE);
+        List<Event> upcomingEventsList = eventRepository.findUpcomingEventsByOrganizerId(organizerId,
+                EventStatus.ACTIVE);
         List<OrganizerDashboardDTO.UpcomingEventDTO> upcomingEvents = upcomingEventsList.stream()
                 .limit(3)
                 .map(this::mapToUpcomingEventDTO)
                 .toList();
 
         // Get recent registrations (limit to 5)
-        List<EventRegistration> recentRegistrationsList = eventRegistrationRepository.findRecentRegistrationsByOrganizerId(organizerId);
+        List<EventRegistration> recentRegistrationsList = eventRegistrationRepository
+                .findRecentRegistrationsByOrganizerId(organizerId);
         List<OrganizerDashboardDTO.RecentRegistrationDTO> recentRegistrations = recentRegistrationsList.stream()
                 .limit(5)
                 .map(this::mapToRecentRegistrationDTO)
@@ -250,29 +251,30 @@ public class OrganizerService implements IOrganizerService {
         dto.setDifficulty(event.getDifficultyLevel() != null ? event.getDifficultyLevel().name() : "EASY");
         dto.setMaxParticipants(event.getMaxParticipants());
         dto.setImage(event.getBannerImageUrl());
-        
+
         // Count participants
-        int participantCount = event.getEventRegistration() != null 
+        int participantCount = event.getEventRegistration() != null
                 ? event.getEventRegistration().stream()
                         .mapToInt(reg -> reg.getEventParticipants() != null ? reg.getEventParticipants().size() : 0)
                         .sum()
                 : 0;
         dto.setParticipants(participantCount);
-        
+
         return dto;
     }
-    
+
     private OrganizerDashboardDTO.RecentRegistrationDTO mapToRecentRegistrationDTO(EventRegistration registration) {
         OrganizerDashboardDTO.RecentRegistrationDTO dto = new OrganizerDashboardDTO.RecentRegistrationDTO();
         dto.setId(registration.getId());
-        dto.setName(registration.getContactName() != null ? registration.getContactName() : registration.getUser().getName());
+        dto.setName(registration.getContactName() != null ? registration.getContactName()
+                : registration.getUser().getName());
         dto.setEvent(registration.getEvent().getTitle());
         dto.setRegistrationDate(registration.getRegistrationDate());
         dto.setContact(registration.getContact() != null ? registration.getContact() : registration.getEmail());
         dto.setStatus(registration.getStatus() != null ? registration.getStatus().name() : "PENDING");
         return dto;
     }
-    
+
     private OrganizerDashboardDTO.ReviewDTO mapToReviewDTO(Reviews review) {
         OrganizerDashboardDTO.ReviewDTO dto = new OrganizerDashboardDTO.ReviewDTO();
         dto.setId(review.getId());

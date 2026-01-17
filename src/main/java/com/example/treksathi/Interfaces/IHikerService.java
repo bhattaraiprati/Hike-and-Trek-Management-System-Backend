@@ -11,5 +11,4 @@ public interface IHikerService {
     List<UpcomingAdventureDTO> getUpcomingAdventures(String email);
     List<RecommendedEventDTO> getRecommendedEvents(String email);
     List<RecentActivityDTO> getRecentActivity(String email);
-
 }
