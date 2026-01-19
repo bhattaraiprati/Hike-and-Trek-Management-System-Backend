@@ -63,7 +63,7 @@ public class EmailSendService implements IEmailSendService {
             text.append("• Participants: ").append(registration.getEventParticipants().size()).append("\n");
 
             if (registration.getPayments() != null) {
-                double amount = registration.getPayments().getAmount() / 100.0;
+                double amount = registration.getPayments().getAmount();
                 text.append("• Amount Paid: NPR ").append(String.format("%.2f", amount)).append("\n");
             }
 
