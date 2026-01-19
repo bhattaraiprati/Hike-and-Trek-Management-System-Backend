@@ -1,5 +1,6 @@
 package com.example.treksathi.service;
 
+import com.example.treksathi.Interfaces.IEmailSendService;
 import com.example.treksathi.Interfaces.IPaymentGatewayService;
 import com.example.treksathi.Interfaces.IStripePaymentService;
 import com.example.treksathi.dto.events.EsewaStatusResponse;
@@ -45,6 +46,7 @@ public class PaymentGatewayService implements IPaymentGatewayService {
     private final UserRepository userRepository;
     private final PaymentRepository paymentsRepository;
     private final EventParticipantsRepository eventParticipantsRepository;
+    private final IEmailSendService emailSendService;
     @Lazy
     private final IStripePaymentService stripePaymentService;
     private final RestTemplate restTemplate;
@@ -205,6 +207,9 @@ public class PaymentGatewayService implements IPaymentGatewayService {
 
             registration.setStatus(EventRegistrationStatus.SUCCESS);
             eventRegistrationRepository.save(registration);
+
+            // send email to the user
+            emailSendService.sendBookingConfirmationEmail(registration);
 
             log.info("Payment verified & booking confirmed for registration ID: {}", registration.getId());
             return registration;
