@@ -1,5 +1,4 @@
 FROM maven:3.9-eclipse-temurin-21-alpine AS builder
-
 WORKDIR /app
 
 COPY pom.xml .
@@ -11,11 +10,10 @@ RUN mvn clean package -DskipTests
 
 # Runtime stage
 FROM eclipse-temurin:21-jdk-alpine
-
 WORKDIR /app
 
 COPY --from=builder /app/target/*.jar app.jar
 
 EXPOSE 10000
 
-ENTRYPOINT ["java", "-Dspring.profiles.active=render", "-jar", "app.jar"]
+ENTRYPOINT ["sh", "-c", "java -Dspring.profiles.active=render -jar app.jar --server.port=$PORT"]
