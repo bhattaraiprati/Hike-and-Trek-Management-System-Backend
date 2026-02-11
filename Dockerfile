@@ -16,4 +16,5 @@ COPY --from=builder /app/target/*.jar app.jar
 
 EXPOSE 10000
 
-ENTRYPOINT ["sh", "-c", "java -Dspring.profiles.active=render -jar app.jar --server.port=$PORT"]
+ENTRYPOINT ["sh", "-c", "java -Dspring.profiles.active=render -jar app.jar --server.port=$PORT --server.address=0.0.0.0"]
+
