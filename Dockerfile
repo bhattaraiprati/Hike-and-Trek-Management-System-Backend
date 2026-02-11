@@ -17,4 +17,5 @@ EXPOSE 10000
 
 # Simple direct approach - let Spring Boot handle the PORT variable
 ENV PORT=10000
+ENV SERVER_PORT=10000
 CMD ["java", "-Dspring.profiles.active=render", "-jar", "app.jar"]
