@@ -66,6 +66,7 @@ public class SecurityConfig {
                         .requestMatchers( "/auth/**", "/event/registration/success", "/event/registration/failure").permitAll()
                         .requestMatchers("/v3/api-docs/auth/**").permitAll()
                         .requestMatchers("/auth/**",  "/public/stats").permitAll()
+                        .requestMatchers("/actuator/health", "/api/actuator/health").permitAll()
                         .requestMatchers("/auth/**").permitAll()
                         .requestMatchers("/oauth2/**", "/oauth2/**", "/login/oauth2/**", "/oauth2/authorization/**").permitAll()
                         .requestMatchers(
