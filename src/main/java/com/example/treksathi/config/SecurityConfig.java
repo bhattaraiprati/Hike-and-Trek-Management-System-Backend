@@ -37,7 +37,7 @@
         @Bean
         public CorsConfigurationSource corsConfigurationSource(){
             CorsConfiguration configuration = new CorsConfiguration();
-            configuration.setAllowedOrigins(Arrays.asList("http://localhost:5173"));
+            configuration.setAllowedOrigins(Arrays.asList("https://hikesathi.netlify.app/"));
             configuration.setAllowedMethods(Arrays.asList("GET", "POST", "DELETE","PUT", "PATCH"));
             configuration.setAllowedHeaders(Arrays.asList("*"));
             configuration.setAllowCredentials(true);
