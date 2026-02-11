@@ -6,6 +6,7 @@ services:
     region: singapore # Adjust as needed
     dockerCommand: "" # Uses the ENTRYPOINT from Dockerfile
     healthCheckPath: /api/actuator/health
+    healthCheckGracePeriod: 200
     envVars:
       - key: DATABASE_URL
         sync: false # Provide your Neon DB URL (without user/pass if using separate vars)
