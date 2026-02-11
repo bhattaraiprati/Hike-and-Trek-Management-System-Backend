@@ -14,7 +14,7 @@ services:
       - key: DATABASE_PASSWORD
         sync: false # e.g. npg_...
       - key: JWT_SECRET_KEY
-        generateValue: true
+        sync: false
       - key: PORT
         value: 8080
       - key: SUCCESS_URL
