@@ -2,14 +2,12 @@ package com.example.treksathi.config;
 
 import com.example.treksathi.Interfaces.IUserServices;
 import com.example.treksathi.dto.user.LoginResponseDTO;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.annotation.Lazy;
-import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.oauth2.client.authentication.OAuth2AuthenticationToken;
@@ -29,7 +27,6 @@ public class OAuth2SuccessHandler implements AuthenticationSuccessHandler {
 
     @Lazy
     private final IUserServices userServices;
-    private final ObjectMapper objectMapper;
 
     // Frontend URL - you can make this configurable via application.properties
     private static final String FRONTEND_URL = "http://localhost:5173";
