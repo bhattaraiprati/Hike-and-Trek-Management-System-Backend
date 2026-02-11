@@ -1,0 +1,55 @@
+services:
+  - type: web
+    name: treksathi-backend
+    env: docker
+    plan: free # or your preferred plan
+    region: singapore # Adjust as needed
+    dockerCommand: "" # Uses the ENTRYPOINT from Dockerfile
+    healthCheckPath: /api/actuator/health
+    envVars:
+      - key: DATABASE_URL
+        sync: false # Provide your Neon DB URL (without user/pass if using separate vars)
+      - key: DATABASE_USERNAME
+        sync: false # e.g. neondb_owner
+      - key: DATABASE_PASSWORD
+        sync: false # e.g. npg_...
+      - key: JWT_SECRET_KEY
+        generateValue: true
+      - key: PORT
+        value: 8080
+      - key: SUCCESS_URL
+        sync: false
+      - key: FAILURE_URL
+        sync: false
+      - key: ESEWA_GATEWAY_URL
+        value: https://rc-epay.esewa.com.np
+      - key: ESEWA_PRODUCT_CODE
+        value: EPAYTEST
+      - key: STRIPE_API_KEY
+        sync: false
+      - key: STRIPE_PUBLISHABLE_KEY
+        sync: false
+      - key: STRIPE_SUCCESS_URL
+        sync: false
+      - key: STRIPE_CANCEL_URL
+        sync: false
+      - key: MAIL_HOST
+        value: smtp.gmail.com
+      - key: MAIL_PORT
+        value: 587
+      - key: MAIL_USERNAME
+        sync: false
+      - key: MAIL_PASSWORD
+        sync: false
+      - key: GOOGLE_CLIENT_ID
+        sync: false
+      - key: GOOGLE_CLIENT_SECRET
+        sync: false
+      - key: QDRANT_HOST
+        sync: false
+      - key: QDRANT_PORT
+        value: 6334
+      - key: QDRANT_API_KEY
+        sync: false
+      - key: OLLAMA_BASE_URL
+        sync: false

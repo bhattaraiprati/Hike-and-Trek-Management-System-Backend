@@ -21,4 +21,8 @@ public class AsyncConfig {
         executor.initialize();
         return executor;
     }
+
+    public static void main(String[] args) {
+
+    }
 }
