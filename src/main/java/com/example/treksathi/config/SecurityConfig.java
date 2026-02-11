@@ -1,8 +1,4 @@
     package com.example.treksathi.config;
-
-    import com.example.treksathi.service.UserDetailsServiceImpl;
-    import jakarta.servlet.ServletException;
-    import jakarta.servlet.http.HttpServletRequest;
     import jakarta.servlet.http.HttpServletResponse;
     import lombok.RequiredArgsConstructor;
     import lombok.extern.slf4j.Slf4j;
@@ -19,15 +15,10 @@
     import org.springframework.security.web.SecurityFilterChain;
     import org.springframework.security.web.authentication.HttpStatusEntryPoint;
     import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
-    import org.springframework.util.StringUtils;
     import org.springframework.web.client.RestTemplate;
     import org.springframework.web.cors.CorsConfiguration;
     import org.springframework.web.cors.CorsConfigurationSource;
     import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
-    import org.springframework.web.servlet.config.annotation.EnableWebMvc;
-
-    import java.io.IOException;
-    import java.lang.reflect.Array;
     import java.util.Arrays;
 
     @Configuration

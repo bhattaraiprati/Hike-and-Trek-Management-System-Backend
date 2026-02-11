@@ -23,20 +23,24 @@ import java.io.IOException;
 @Slf4j
 public class JwtAuthFilter extends OncePerRequestFilter {
 
-    private final  UserDetailsService userDetailsService;
+    private final UserDetailsService userDetailsService;
     private final JWTService jwtService;
 
     public JwtAuthFilter(@Lazy UserDetailsService userDetailsService,
-                         JWTService jwtService) {
+            JWTService jwtService) {
         this.userDetailsService = userDetailsService;
         this.jwtService = jwtService;
     }
 
     @Override
-    protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain filterChain) throws ServletException, TokenExpireException, IOException {
-        log.info("incoming request: {}", request.getRequestURI());
+    protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain filterChain)
+            throws ServletException, TokenExpireException, IOException {
         String requestPath = request.getRequestURI();
-        log.info("incoming request: {}", requestPath);
+
+        // Don't log health checks at INFO level to keep logs clean
+        if (!requestPath.contains("/actuator/health")) {
+            log.info("incoming request: {}", requestPath);
+        }
 
         if (requestPath.contains("/swagger-ui") ||
                 requestPath.contains("/v3/api-docs") ||
@@ -53,23 +57,20 @@ public class JwtAuthFilter extends OncePerRequestFilter {
         }
         String token = authHeader.substring(7).trim();
 
+        try {
+            String email = jwtService.getUsernameFormToken(token);
+            if (email != null && SecurityContextHolder.getContext().getAuthentication() == null) {
+                UserDetails userDetails = this.userDetailsService.loadUserByUsername(email);
 
+                if (jwtService.isTokenValid(token, userDetails)) {
+                    UsernamePasswordAuthenticationToken authToken = new UsernamePasswordAuthenticationToken(userDetails,
+                            null, userDetails.getAuthorities());
+                    authToken.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
+                    SecurityContextHolder.getContext().setAuthentication(authToken);
+                }
 
-        try{
-        String email = jwtService.getUsernameFormToken(token);
-        if (email != null && SecurityContextHolder.getContext().getAuthentication()== null){
-            UserDetails userDetails = this.userDetailsService.loadUserByUsername(email);
-
-            if (jwtService.isTokenValid(token, userDetails)){
-                UsernamePasswordAuthenticationToken authToken =
-                        new UsernamePasswordAuthenticationToken(userDetails, null, userDetails.getAuthorities());
-                authToken.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
-                SecurityContextHolder.getContext().setAuthentication(authToken);
             }
-
-        }
-        }
-        catch (TokenExpireException e){
+        } catch (TokenExpireException e) {
             new TokenExpireException("Requested token is Expired");
             log.warn("Invalid JWT: {}", e.getMessage());
         }
@@ -77,15 +78,15 @@ public class JwtAuthFilter extends OncePerRequestFilter {
 
     }
 
-//@Override
-//    protected boolean shouldNotFilter(HttpServletRequest request) {
-//        String path = request.getRequestURI();
-//
-//        // Add all public paths here
-//        return path.startsWith("/api/auth/") ||
-//                path.startsWith("/oauth2/") ||
-//                path.startsWith("/login/oauth2/") ||
-//                path.startsWith("/login") ||
-//                path.equals("/error");
-//    }
+    // @Override
+    // protected boolean shouldNotFilter(HttpServletRequest request) {
+    // String path = request.getRequestURI();
+    //
+    // // Add all public paths here
+    // return path.startsWith("/api/auth/") ||
+    // path.startsWith("/oauth2/") ||
+    // path.startsWith("/login/oauth2/") ||
+    // path.startsWith("/login") ||
+    // path.equals("/error");
+    // }
 }
