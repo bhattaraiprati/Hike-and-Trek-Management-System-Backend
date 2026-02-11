@@ -29,7 +29,7 @@ public class OAuth2SuccessHandler implements AuthenticationSuccessHandler {
     private final IUserServices userServices;
 
     // Frontend URL - you can make this configurable via application.properties
-    private static final String FRONTEND_URL = "http://localhost:5173";
+    private static final String FRONTEND_URL = "https://hikesathi.netlify.app/";
 
     @Override
     public void onAuthenticationSuccess(
