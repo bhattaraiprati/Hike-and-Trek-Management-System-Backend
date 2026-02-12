@@ -7,6 +7,7 @@ import jakarta.mail.internet.MimeMessage;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.mail.SimpleMailMessage;
 import org.springframework.mail.javamail.JavaMailSender;
 import org.springframework.mail.javamail.MimeMessageHelper;
@@ -20,7 +21,8 @@ import java.util.concurrent.CompletableFuture;
 @Service
 @RequiredArgsConstructor
 @Slf4j
-public class EmailSendService implements IEmailSendService {
+@ConditionalOnProperty(name = "email.provider", havingValue = "smtp", matchIfMissing = true)
+public class SmtpEmailSendService implements IEmailSendService {
     private final JavaMailSender javaMailSender;
 
     @Value("${spring.mail.username}")
@@ -51,8 +53,8 @@ public class EmailSendService implements IEmailSendService {
 
             // Simple plain text message
             StringBuilder text = new StringBuilder();
-            text.append("Dear ").append(registration.getContactName() != null ?
-                    registration.getContactName() : registration.getUser().getName()).append(",\n\n");
+            text.append("Dear ").append(registration.getContactName() != null ? registration.getContactName()
+                    : registration.getUser().getName()).append(",\n\n");
 
             text.append("Thank you for your payment!\n");
             text.append("Your registration for the event has been successfully confirmed.\n\n");
@@ -79,7 +81,7 @@ public class EmailSendService implements IEmailSendService {
 
             SimpleMailMessage message = new SimpleMailMessage();
             message.setFrom(email);
-            message.setTo(registration.getEmail());  // or registration.getEmail() if different field
+            message.setTo(registration.getEmail()); // or registration.getEmail() if different field
             message.setSubject(subject);
             message.setText(text.toString());
 
@@ -102,7 +104,7 @@ public class EmailSendService implements IEmailSendService {
             message.setBcc(recipients.toArray(new String[0])); // Use BCC to hide recipients from each other
             message.setSubject(subject);
             message.setText(text);
-            //get from properties
+            // get from properties
             message.setFrom(email);
 
             javaMailSender.send(message);
@@ -114,7 +116,8 @@ public class EmailSendService implements IEmailSendService {
         }
     }
 
-    public void sendEmailWithAttachment(String to, String subject, String text, File attachment) throws MessagingException {
+    public void sendEmailWithAttachment(String to, String subject, String text, File attachment)
+            throws MessagingException {
         MimeMessage message = javaMailSender.createMimeMessage();
         MimeMessageHelper helper = new MimeMessageHelper(message, true);
 
@@ -131,4 +134,3 @@ public class EmailSendService implements IEmailSendService {
         javaMailSender.send(message);
     }
 }
-
