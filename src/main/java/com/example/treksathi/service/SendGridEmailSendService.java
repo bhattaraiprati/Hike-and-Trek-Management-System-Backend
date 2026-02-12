@@ -140,6 +140,11 @@ public class SendGridEmailSendService implements IEmailSendService {
                 .contentType(MediaType.APPLICATION_JSON)
                 .bodyValue(body)
                 .retrieve()
+                .onStatus(status -> status.isError(), response -> response.bodyToMono(String.class)
+                        .flatMap(errorBody -> {
+                            log.error("SendGrid API Error: Status={}, Body={}", response.statusCode(), errorBody);
+                            return Mono.error(new RuntimeException("SendGrid API Error: " + response.statusCode()));
+                        }))
                 .toBodilessEntity()
                 .map(response -> {
                     log.info("Email sent via SendGrid to: {}", to);
