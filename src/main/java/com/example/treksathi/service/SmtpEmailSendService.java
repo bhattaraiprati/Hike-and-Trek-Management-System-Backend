@@ -21,7 +21,7 @@ import java.util.concurrent.CompletableFuture;
 @Service
 @RequiredArgsConstructor
 @Slf4j
-@ConditionalOnProperty(name = "email.provider", havingValue = "smtp", matchIfMissing = true)
+@ConditionalOnProperty(name = "email.provider", havingValue = "smtp")
 public class SmtpEmailSendService implements IEmailSendService {
     private final JavaMailSender javaMailSender;
 
